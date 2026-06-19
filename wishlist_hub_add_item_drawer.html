@@ -1,0 +1,396 @@
+
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;1,400&family=Inter:wght@300;400;500&display=swap');
+
+  :root {
+    --pink: #F8AFC8;
+    --pink-deep: #E87FAA;
+    --blush: #FCE7EF;
+    --cream: #FFF8F0;
+    --lavender: #D8C7FF;
+    --lav-light: #EDE8FF;
+    --ink: #3A2E39;
+    --muted: #9A8A96;
+    --white: #FFFFFF;
+    --border: rgba(248,175,200,0.3);
+    --border-strong: rgba(248,175,200,0.55);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  .shell {
+    font-family: 'Inter', sans-serif;
+    background: var(--cream);
+    color: var(--ink);
+    min-height: 680px;
+    position: relative;
+  }
+
+  .topbar {
+    background: var(--white);
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 24px; height: 52px;
+  }
+
+  .logo { font-family: 'Playfair Display', serif; font-size: 18px; color: var(--ink); }
+  .avatar { width: 32px; height: 32px; border-radius: 50%; background: var(--pink); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 500; color: var(--white); }
+  .nav-pills { display: flex; gap: 4px; }
+  .nav-pill { font-size: 13px; padding: 5px 14px; border-radius: 20px; color: var(--muted); cursor: pointer; border: none; background: transparent; font-family: 'Inter', sans-serif; }
+  .nav-pill.active { background: var(--blush); color: var(--ink); font-weight: 500; }
+
+  .page-dimmed {
+    display: flex;
+    min-height: 628px;
+    align-items: flex-start;
+    justify-content: flex-end;
+    background: rgba(58,46,57,0.18);
+    position: relative;
+  }
+
+  .bg-glimpse {
+    position: absolute;
+    inset: 0;
+    padding: 28px 32px;
+    opacity: 0.35;
+    pointer-events: none;
+  }
+
+  .bg-title { font-family: 'Playfair Display', serif; font-size: 22px; color: var(--ink); margin-bottom: 16px; }
+
+  .ghost-card {
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    width: 200px;
+    height: 160px;
+    display: inline-block;
+    margin-right: 14px;
+    vertical-align: top;
+  }
+
+  .drawer {
+    width: 420px;
+    background: var(--white);
+    border-left: 1px solid var(--border-strong);
+    min-height: 628px;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    z-index: 2;
+    box-shadow: -8px 0 32px rgba(248,175,200,0.12);
+  }
+
+  .drawer-header {
+    padding: 20px 24px 16px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+  }
+
+  .drawer-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 20px;
+    color: var(--ink);
+  }
+
+  .drawer-title em { font-style: italic; color: var(--pink-deep); }
+  .drawer-sub { font-size: 12px; color: var(--muted); margin-top: 3px; }
+
+  .close-btn {
+    width: 30px; height: 30px; border-radius: 50%;
+    background: var(--blush);
+    border: none; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 15px; color: var(--pink-deep);
+    flex-shrink: 0;
+  }
+
+  .drawer-body {
+    padding: 20px 24px;
+    flex: 1;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  .skeleton { display:inline-block; background: linear-gradient(90deg, rgba(255,255,255,0.06) 25%, rgba(255,255,255,0.12) 50%, rgba(255,255,255,0.06) 75%); background-size:200% 100%; animation: shimmer 1.2s linear infinite; color:transparent; border-radius:4px }
+  @keyframes shimmer { from { background-position: 200% 0 } to { background-position: -200% 0 } }
+
+  .url-strip {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--cream);
+    border: 1px dashed var(--border-strong);
+    border-radius: 12px;
+    padding: 10px 14px;
+    margin-bottom: 2px;
+  }
+
+  .url-strip i { font-size: 16px; color: var(--pink); }
+  .url-input-fake { font-size: 13px; color: var(--muted); flex: 1; }
+  .url-btn {
+    font-size: 12px; font-weight: 500;
+    background: var(--pink);
+    color: var(--white);
+    border: none; border-radius: 10px;
+    padding: 5px 12px; cursor: pointer;
+    font-family: 'Inter', sans-serif;
+  }
+
+  .divider-row { display: flex; align-items: center; gap: 10px; }
+  .divider-line { flex: 1; height: 1px; background: var(--border-strong); }
+  .divider-text { font-size: 11px; color: var(--muted); }
+
+  .field { display: flex; flex-direction: column; gap: 6px; }
+  .field-label { font-size: 12px; font-weight: 500; color: var(--ink); display: flex; align-items: center; gap: 5px; }
+  .field-label i { font-size: 13px; color: var(--pink); }
+
+  .field-input {
+    border: 1px solid var(--border-strong);
+    border-radius: 10px;
+    padding: 9px 12px;
+    font-size: 13px;
+    font-family: 'Inter', sans-serif;
+    color: var(--ink);
+    background: var(--white);
+    outline: none;
+    width: 100%;
+  }
+
+  .field-input:focus { border-color: var(--pink); }
+  .field-input::placeholder { color: var(--muted); }
+
+  .field-input.filled { border-color: var(--pink); background: var(--blush); color: var(--ink); }
+
+  textarea.field-input { resize: none; line-height: 1.6; }
+
+  .row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+  .select-wrap { position: relative; }
+  .select-wrap select {
+    appearance: none;
+    border: 1px solid var(--border-strong);
+    border-radius: 10px;
+    padding: 9px 32px 9px 12px;
+    font-size: 13px;
+    font-family: 'Inter', sans-serif;
+    color: var(--ink);
+    background: var(--white);
+    outline: none;
+    width: 100%;
+    cursor: pointer;
+  }
+  .select-wrap i { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); font-size: 14px; color: var(--muted); pointer-events: none; }
+
+  .priority-row { display: flex; gap: 8px; }
+
+  .priority-chip {
+    flex: 1; padding: 8px 6px; border-radius: 10px;
+    border: 1.5px solid var(--border-strong);
+    font-size: 12px; font-weight: 500;
+    text-align: center; cursor: pointer;
+    font-family: 'Inter', sans-serif;
+    background: var(--white);
+    color: var(--muted);
+  }
+
+  .priority-chip.sel-high { background: var(--blush); border-color: var(--pink); color: var(--pink-deep); }
+  .priority-chip.sel-med { background: var(--lav-light); border-color: var(--lavender); color: #6B52C0; }
+  .priority-chip.sel-low { background: #FFF3DC; border-color: #F5D68A; color: #A07A20; }
+
+  .image-drop {
+    border: 1.5px dashed var(--border-strong);
+    border-radius: 12px;
+    padding: 18px;
+    text-align: center;
+    cursor: pointer;
+    background: var(--cream);
+  }
+
+  .image-drop i { font-size: 24px; color: var(--pink); margin-bottom: 6px; }
+  .image-drop-text { font-size: 12px; color: var(--muted); }
+  .image-drop-sub { font-size: 11px; color: var(--border-strong); margin-top: 3px; }
+
+  .qty-row { display: flex; align-items: center; gap: 10px; }
+  .qty-btn {
+    width: 30px; height: 30px; border-radius: 50%;
+    border: 1px solid var(--border-strong);
+    background: var(--white);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px; color: var(--ink); cursor: pointer;
+  }
+  .qty-num { font-size: 15px; font-weight: 500; color: var(--ink); min-width: 20px; text-align: center; }
+
+  .char-count { font-size: 11px; color: var(--muted); text-align: right; margin-top: 2px; }
+
+  .drawer-footer {
+    padding: 16px 24px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    gap: 10px;
+    align-items: center;
+  }
+
+  .btn-save {
+    flex: 1;
+    background: var(--pink);
+    color: var(--white);
+    border: none; border-radius: 22px;
+    padding: 11px;
+    font-size: 14px; font-weight: 500;
+    font-family: 'Inter', sans-serif;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+  }
+
+  .btn-cancel {
+    background: var(--white);
+    color: var(--muted);
+    border: 1px solid var(--border-strong);
+    border-radius: 22px;
+    padding: 11px 18px;
+    font-size: 13px;
+    font-family: 'Inter', sans-serif;
+    cursor: pointer;
+  }
+
+  .qty-display { font-size: 13px; color: var(--ink); font-weight: 500; }
+</style>
+
+<h2 class="sr-only">Add Item drawer/modal for WishList Hub, sliding in from the right over the wishlist page</h2>
+
+<div class="shell">
+  <div class="topbar">
+    <div class="logo">🎀 WishList Hub</div>
+    <div class="nav-pills">
+      <button class="nav-pill">Dashboard</button>
+      <button class="nav-pill active">My Wishlist</button>
+      <button class="nav-pill">Rooms</button>
+      <button class="nav-pill">Settings</button>
+    </div>
+    <div class="avatar">AL</div>
+  </div>
+
+  <div class="page-dimmed">
+    <div class="bg-glimpse">
+      <div class="bg-title">Alice's Wishlist ✨</div>
+      <div class="ghost-card"></div>
+      <div class="ghost-card"></div>
+      <div class="ghost-card"></div>
+    </div>
+
+    <div class="drawer">
+      <div class="drawer-header">
+        <div>
+          <div class="drawer-title">Add a <em>wish</em> 🎁</div>
+          <div class="drawer-sub">Paste a link or fill in the details manually</div>
+        </div>
+        <button class="close-btn" aria-label="Close drawer"><i class="ti ti-x" aria-hidden="true"></i></button>
+      </div>
+
+      <div class="drawer-body">
+
+        <div class="url-strip">
+          <i class="ti ti-link" aria-hidden="true"></i>
+          <span class="url-input-fake"><span class="skeleton" style="width:160px;height:16px;display:inline-block">&nbsp;</span></span>
+          <button class="url-btn">Fetch ✨</button>
+        </div>
+
+        <div class="divider-row">
+          <div class="divider-line"></div>
+          <span class="divider-text">or fill in manually</span>
+          <div class="divider-line"></div>
+        </div>
+
+        <div class="field">
+          <label class="field-label"><i class="ti ti-tag" aria-hidden="true"></i> Item name</label>
+          <input class="field-input" type="text" placeholder="e.g. Pink Stanley Cup" />
+        </div>
+
+        <div class="field">
+          <label class="field-label"><i class="ti ti-align-left" aria-hidden="true"></i> Description <span style="font-weight:400;color:var(--muted);font-size:11px;">optional</span></label>
+          <textarea class="field-input" rows="2" placeholder="Colour, size, edition, or any notes…"></textarea>
+          <div class="char-count">0 / 280</div>
+        </div>
+
+        <div class="row-2">
+          <div class="field">
+            <label class="field-label"><i class="ti ti-folder" aria-hidden="true"></i> Category</label>
+            <div class="select-wrap">
+              <select>
+                <option>Electronics</option>
+                <option>Books</option>
+                <option>Beauty</option>
+                <option>Gaming</option>
+                <option>Home Decor</option>
+                <option>Clothing</option>
+                <option>Sports</option>
+                <option>Custom…</option>
+              </select>
+              <i class="ti ti-chevron-down" aria-hidden="true"></i>
+            </div>
+          </div>
+          <div class="field">
+            <label class="field-label"><i class="ti ti-currency-pound" aria-hidden="true"></i> Price estimate</label>
+            <input class="field-input" type="text" placeholder="e.g. $50" />
+          </div>
+        </div>
+
+        <div class="field">
+          <label class="field-label"><i class="ti ti-star" aria-hidden="true"></i> Priority</label>
+          <div class="priority-row">
+            <button class="priority-chip sel-high">★ High</button>
+            <button class="priority-chip">● Medium</button>
+            <button class="priority-chip">· Low</button>
+          </div>
+        </div>
+
+        <div class="row-2">
+          <div class="field">
+            <label class="field-label"><i class="ti ti-stack" aria-hidden="true"></i> Quantity</label>
+            <div class="qty-row">
+              <button class="qty-btn">−</button>
+              <span class="qty-num">1</span>
+              <button class="qty-btn">+</button>
+              <span style="font-size:12px;color:var(--muted);">needed</span>
+            </div>
+          </div>
+          <div class="field">
+            <label class="field-label"><i class="ti ti-eye" aria-hidden="true"></i> Visibility</label>
+            <div class="select-wrap">
+              <select>
+                <option>All room members</option>
+                <option>Admin only</option>
+                <option>Just me</option>
+              </select>
+              <i class="ti ti-chevron-down" aria-hidden="true"></i>
+            </div>
+          </div>
+        </div>
+
+        <div class="field">
+          <label class="field-label"><i class="ti ti-photo" aria-hidden="true"></i> Image <span style="font-weight:400;color:var(--muted);font-size:11px;">optional</span></label>
+          <div class="image-drop">
+            <div><i class="ti ti-cloud-upload" aria-hidden="true"></i></div>
+            <div class="image-drop-text">Drop an image or click to browse</div>
+            <div class="image-drop-sub">PNG, JPG, WEBP · max 5 MB</div>
+          </div>
+        </div>
+
+        <div class="field">
+          <label class="field-label"><i class="ti ti-notes" aria-hidden="true"></i> Private notes <span style="font-weight:400;color:var(--muted);font-size:11px;">only you see this</span></label>
+          <input class="field-input" type="text" placeholder="e.g. Check Amazon for better price" />
+        </div>
+
+      </div>
+
+      <div class="drawer-footer">
+        <button class="btn-cancel">Cancel</button>
+        <button class="btn-save"><i class="ti ti-heart" aria-hidden="true"></i> Add to wishlist</button>
+      </div>
+    </div>
+  </div>
+</div>

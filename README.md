@@ -426,3 +426,16 @@ The platform should be free for users. Users can create rooms, invite friends, a
 
 The project can still include future monetization ideas, but the first version should stay completely free to use.
 
+---
+
+## Included mockups
+
+This repository contains simple static mockups and UI sketches you can open in a browser to preview the visual design and flows described above:
+
+- [wishlist_hub_mockup.html](wishlist_hub_mockup.html) — Dashboard and rooms overview mockup
+- [wishlist_hub_my_wishlist.html](wishlist_hub_my_wishlist.html) — My Wishlist page mockup (item cards, filters, progress)
+- [wishlist_hub_add_item_drawer.html](wishlist_hub_add_item_drawer.html) — Add-item drawer / form mockup
+- [wishlist_hub_admin_room_settings.html](wishlist_hub_admin_room_settings.html) — Admin room settings mockup
+
+To view any mockup, open the HTML file in your browser (double-click or use `open <filename>` on macOS). These files are static design prototypes and demonstrate UI ideas referenced in the README.
+

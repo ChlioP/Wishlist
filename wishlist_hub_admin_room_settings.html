@@ -1,0 +1,465 @@
+
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;1,400&family=Inter:wght@300;400;500&display=swap');
+
+  :root {
+    --pink: #F8AFC8;
+    --pink-deep: #E87FAA;
+    --blush: #FCE7EF;
+    --cream: #FFF8F0;
+    --lavender: #D8C7FF;
+    --lav-light: #EDE8FF;
+    --ink: #3A2E39;
+    --muted: #9A8A96;
+    --white: #FFFFFF;
+    --border: rgba(248,175,200,0.3);
+    --border-strong: rgba(248,175,200,0.55);
+    --mint-bg: #DFFAEC;
+    --mint-text: #1E7A4A;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  .shell { font-family: 'Inter', sans-serif; background: var(--cream); color: var(--ink); min-height: 760px; }
+
+  .topbar {
+    background: var(--white);
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 24px; height: 52px;
+  }
+
+  .logo { font-family: 'Playfair Display', serif; font-size: 18px; color: var(--ink); display: flex; align-items: center; gap: 8px; }
+
+  .nav-pills { display: flex; gap: 4px; }
+  .nav-pill { font-size: 13px; padding: 5px 14px; border-radius: 20px; color: var(--muted); cursor: pointer; border: none; background: transparent; font-family: 'Inter', sans-serif; }
+  .nav-pill.active { background: var(--blush); color: var(--ink); font-weight: 500; }
+
+  .avatar { width: 32px; height: 32px; border-radius: 50%; background: var(--pink); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 500; color: var(--white); }
+
+  .layout { display: grid; grid-template-columns: 220px 1fr; min-height: 708px; }
+
+  .sidebar { background: var(--white); border-right: 1px solid var(--border); padding: 20px 14px; display: flex; flex-direction: column; gap: 2px; }
+  .sidebar-label { font-size: 10px; font-weight: 500; letter-spacing: 0.08em; color: var(--muted); text-transform: uppercase; padding: 12px 8px 6px; }
+  .sidebar-item { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 10px; font-size: 13px; color: var(--muted); cursor: pointer; border: none; background: transparent; font-family: 'Inter', sans-serif; width: 100%; text-align: left; }
+  .sidebar-item.active { background: var(--blush); color: var(--ink); font-weight: 500; }
+  .sidebar-item i { font-size: 16px; flex-shrink: 0; }
+
+  .admin-badge { font-size: 10px; background: var(--pink); color: var(--white); padding: 2px 7px; border-radius: 8px; margin-left: auto; }
+
+  .main { padding: 28px 32px; overflow: hidden; }
+
+  .breadcrumb { font-size: 12px; color: var(--muted); margin-bottom: 16px; display: flex; align-items: center; gap: 6px; }
+  .breadcrumb i { font-size: 13px; }
+  .breadcrumb a { color: var(--pink-deep); cursor: pointer; }
+
+  .page-title { font-family: 'Playfair Display', serif; font-size: 22px; color: var(--ink); margin-bottom: 4px; }
+  .page-sub { font-size: 13px; color: var(--muted); margin-bottom: 24px; }
+
+  .tabs { display: flex; gap: 0; border-bottom: 1px solid var(--border-strong); margin-bottom: 24px; }
+  .tab { font-size: 13px; padding: 10px 18px; cursor: pointer; border: none; background: transparent; font-family: 'Inter', sans-serif; color: var(--muted); border-bottom: 2px solid transparent; margin-bottom: -1px; }
+  .tab.active { color: var(--pink-deep); font-weight: 500; border-bottom-color: var(--pink); }
+
+  .section-card { background: var(--white); border: 1px solid var(--border); border-radius: 16px; padding: 20px 22px; margin-bottom: 16px; }
+  .section-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+  .section-title { font-size: 14px; font-weight: 500; color: var(--ink); display: flex; align-items: center; gap: 8px; }
+  .section-title i { font-size: 16px; color: var(--pink); }
+  .section-sub { font-size: 12px; color: var(--muted); margin-top: 2px; }
+
+  .mode-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+
+  .mode-card {
+    border: 1.5px solid var(--border-strong);
+    border-radius: 14px;
+    padding: 16px 14px;
+    cursor: pointer;
+    transition: border-color 0.15s;
+    position: relative;
+  }
+
+  .mode-card.selected { border-color: var(--pink); background: var(--blush); }
+
+  .mode-icon { width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; margin-bottom: 10px; font-size: 18px; }
+  .mode-name { font-size: 13px; font-weight: 500; color: var(--ink); margin-bottom: 4px; }
+  .mode-desc { font-size: 11px; color: var(--muted); line-height: 1.5; }
+
+  .mode-check {
+    position: absolute;
+    top: 12px; right: 12px;
+    width: 18px; height: 18px;
+    border-radius: 50%;
+    background: var(--pink);
+    display: flex; align-items: center; justify-content: center;
+  }
+
+  .mode-check i { font-size: 11px; color: var(--white); }
+
+  .member-list { display: flex; flex-direction: column; gap: 10px; }
+
+  .member-row {
+    display: flex; align-items: center; gap: 12px;
+    padding: 10px 12px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: var(--cream);
+  }
+
+  .mem-avatar {
+    width: 34px; height: 34px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 500; color: var(--white);
+    flex-shrink: 0;
+  }
+
+  .mem-name { font-size: 13px; font-weight: 500; color: var(--ink); }
+  .mem-email { font-size: 11px; color: var(--muted); }
+
+  .mem-role {
+    margin-left: auto;
+    font-size: 11px; font-weight: 500;
+    padding: 3px 10px; border-radius: 10px;
+  }
+
+  .role-admin { background: var(--blush); color: var(--pink-deep); }
+  .role-member { background: var(--lav-light); color: #6B52C0; }
+
+  .mem-actions { display: flex; gap: 6px; margin-left: 8px; }
+
+  .icon-btn {
+    width: 28px; height: 28px; border-radius: 8px;
+    border: 1px solid var(--border-strong);
+    background: var(--white);
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; font-size: 14px; color: var(--muted);
+  }
+
+  .icon-btn.danger { color: #D84040; border-color: rgba(216,64,64,0.25); }
+
+  .visibility-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+  .vis-row {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 10px; padding: 10px 14px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: var(--cream);
+  }
+
+  .vis-info { display: flex; align-items: center; gap: 10px; }
+  .vis-avatar { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 500; color: var(--white); flex-shrink: 0; }
+  .vis-name { font-size: 12px; font-weight: 500; color: var(--ink); }
+
+  .toggle-wrap { display: flex; align-items: center; gap: 8px; }
+  .toggle-label { font-size: 11px; color: var(--muted); }
+
+  .toggle {
+    width: 36px; height: 20px; border-radius: 10px;
+    position: relative; cursor: pointer; flex-shrink: 0;
+    border: none;
+  }
+
+  .toggle.on { background: var(--pink); }
+  .toggle.off { background: #DDD6D9; }
+
+  .toggle-knob {
+    width: 14px; height: 14px; border-radius: 50%; background: var(--white);
+    position: absolute; top: 3px;
+    transition: left 0.15s;
+  }
+
+  .toggle.on .toggle-knob { left: 19px; }
+  .toggle.off .toggle-knob { left: 3px; }
+
+  .danger-section { border-color: rgba(216,64,64,0.2); }
+  .danger-title { color: #C03030; }
+  .danger-title i { color: #D84040; }
+
+  .btn-danger {
+    background: transparent;
+    color: #C03030;
+    border: 1px solid rgba(216,64,64,0.35);
+    border-radius: 20px;
+    padding: 8px 16px;
+    font-size: 13px;
+    font-family: 'Inter', sans-serif;
+    cursor: pointer;
+    display: flex; align-items: center; gap: 6px;
+  }
+
+  .btn-save {
+    background: var(--pink);
+    color: var(--white);
+    border: none;
+    border-radius: 20px;
+    padding: 9px 22px;
+    font-size: 13px;
+    font-family: 'Inter', sans-serif;
+    font-weight: 500;
+    cursor: pointer;
+    display: flex; align-items: center; gap: 7px;
+  }
+
+  .btn-ghost {
+    background: var(--white);
+    color: var(--muted);
+    border: 1px solid var(--border-strong);
+    border-radius: 20px;
+    padding: 8px 16px;
+    font-size: 13px;
+    font-family: 'Inter', sans-serif;
+    cursor: pointer;
+    display: flex; align-items: center; gap: 6px;
+  }
+
+  .invite-row {
+    display: flex; gap: 10px; align-items: center;
+    padding: 12px 14px;
+    background: var(--cream);
+    border: 1px dashed var(--border-strong);
+    border-radius: 12px;
+  }
+
+  .invite-code {
+    font-family: 'Inter', monospace;
+    font-size: 15px;
+    font-weight: 500;
+    letter-spacing: 0.12em;
+    color: var(--ink);
+    flex: 1;
+  }
+
+  .info-pill {
+    font-size: 11px;
+    background: var(--mint-bg);
+    color: var(--mint-text);
+    padding: 3px 10px;
+    border-radius: 10px;
+    font-weight: 500;
+  }
+
+  .footer-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 8px; }
+  /* Focus styles for keyboard users */
+  .mode-card:focus, .toggle:focus, .icon-btn:focus, .btn-save:focus, .btn-ghost:focus {
+    outline: 3px solid rgba(248,175,200,0.35);
+    outline-offset: 2px;
+  }
+  .skeleton { display:inline-block; background: linear-gradient(90deg, rgba(255,255,255,0.06) 25%, rgba(255,255,255,0.12) 50%, rgba(255,255,255,0.06) 75%); background-size:200% 100%; animation: shimmer 1.2s linear infinite; color:transparent; border-radius:4px }
+  @keyframes shimmer { from { background-position: 200% 0 } to { background-position: -200% 0 } }
+</style>
+
+<h2 class="sr-only">Admin Room Settings page for the Birthday Party room, with privacy mode selector, member management, and visibility controls</h2>
+
+<div class="shell">
+  <div class="topbar">
+    <div class="logo">🎀 WishList Hub</div>
+    <div class="nav-pills">
+      <button class="nav-pill">Dashboard</button>
+      <button class="nav-pill">My Wishlist</button>
+      <button class="nav-pill active">Rooms</button>
+      <button class="nav-pill">Settings</button>
+    </div>
+    <div class="avatar">AL</div>
+  </div>
+
+  <div class="layout">
+    <div class="sidebar">
+      <div class="sidebar-label">Room</div>
+      <button class="sidebar-item"><i class="ti ti-users" aria-hidden="true"></i> Members</button>
+      <button class="sidebar-item active"><i class="ti ti-settings" aria-hidden="true"></i> Settings <span class="admin-badge">Admin</span></button>
+      <button class="sidebar-item"><i class="ti ti-eye" aria-hidden="true"></i> Activity Log</button>
+      <button class="sidebar-item"><i class="ti ti-chart-bar" aria-hidden="true"></i> Wishlist Stats</button>
+
+      <div class="sidebar-label" style="margin-top:12px;">Other Rooms</div>
+      <button class="sidebar-item"><i class="ti ti-door" aria-hidden="true"></i> Secret Santa</button>
+      <button class="sidebar-item"><i class="ti ti-door" aria-hidden="true"></i> Family Gifts</button>
+      <button class="sidebar-item" style="margin-top:auto;"><i class="ti ti-plus" aria-hidden="true"></i> Create Room</button>
+    </div>
+
+    <div class="main">
+      <div class="breadcrumb">
+        <a>Rooms</a>
+        <i class="ti ti-chevron-right" aria-hidden="true"></i>
+        <span>Birthday Party</span>
+        <i class="ti ti-chevron-right" aria-hidden="true"></i>
+        <span>Settings</span>
+      </div>
+
+      <div class="page-title">🎂 Birthday Party — Settings</div>
+      <div class="page-sub">Manage members, privacy, and visibility for this room</div>
+
+      <div class="tabs">
+        <button class="tab active">Privacy & Visibility</button>
+        <button class="tab">Members</button>
+        <button class="tab">Invite</button>
+        <button class="tab">Danger Zone</button>
+      </div>
+
+      <!-- Privacy Mode -->
+      <div class="section-card">
+        <div class="section-head">
+          <div>
+            <div class="section-title"><i class="ti ti-lock" aria-hidden="true"></i> Room privacy mode</div>
+            <div class="section-sub">Controls who can see each other's wishlists</div>
+          </div>
+          <span class="info-pill">Shared Mode active</span>
+        </div>
+        <div class="mode-grid">
+          <div class="mode-card">
+            <div class="mode-icon" style="background:var(--blush);">🔒</div>
+            <div class="mode-name">Private</div>
+            <div class="mode-desc">Members see only their own wishlist. You see all.</div>
+          </div>
+          <div class="mode-card selected">
+            <div class="mode-check"><i class="ti ti-check" aria-hidden="true"></i></div>
+            <div class="mode-icon" style="background:var(--lav-light);">👥</div>
+            <div class="mode-name">Shared</div>
+            <div class="mode-desc">You choose who can see whose wishlist.</div>
+          </div>
+          <div class="mode-card">
+            <div class="mode-icon" style="background:var(--mint-bg);">🌸</div>
+            <div class="mode-name">Public Room</div>
+            <div class="mode-desc">Everyone in the room can see all wishlists.</div>
+          </div>
+        </div>
+        <div style="font-size:12px;color:var(--muted);margin-top:10px;">Tip: Click a mode to activate it. Use the per-member toggles below to give or remove visibility for specific members.</div>
+      </div>
+
+      <!-- Per-member visibility -->
+      <div class="section-card">
+        <div class="section-head">
+          <div>
+            <div class="section-title"><i class="ti ti-eye" aria-hidden="true"></i> Wishlist visibility</div>
+            <div class="section-sub">Shared mode — toggle who can view each member's wishlist</div>
+          </div>
+        </div>
+        <div class="visibility-grid">
+          <div class="vis-row">
+            <div class="vis-info">
+              <div class="vis-avatar" style="background:#F8AFC8;">B</div>
+              <div>
+                <div class="vis-name">Bob</div>
+              </div>
+            </div>
+            <div class="toggle-wrap">
+              <span class="toggle-label">Visible</span>
+              <div class="toggle on"><div class="toggle-knob"></div></div>
+            </div>
+          </div>
+          <div class="vis-row">
+            <div class="vis-info">
+              <div class="vis-avatar" style="background:#D8C7FF;">C</div>
+              <div><div class="vis-name">Carol</div></div>
+            </div>
+            <div class="toggle-wrap">
+              <span class="toggle-label">Visible</span>
+              <div class="toggle on"><div class="toggle-knob"></div></div>
+            </div>
+          </div>
+          <div class="vis-row">
+            <div class="vis-info">
+              <div class="vis-avatar" style="background:#A8D8C8;">D</div>
+              <div><div class="vis-name">David</div></div>
+            </div>
+            <div class="toggle-wrap">
+              <span class="toggle-label">Hidden</span>
+              <div class="toggle off"><div class="toggle-knob"></div></div>
+            </div>
+          </div>
+          <div class="vis-row">
+            <div class="vis-info">
+              <div class="vis-avatar" style="background:#F0C0A8;">E</div>
+              <div><div class="vis-name">Emma</div></div>
+            </div>
+            <div class="toggle-wrap">
+              <span class="toggle-label">Visible</span>
+              <div class="toggle on"><div class="toggle-knob"></div></div>
+            </div>
+          </div>
+        </div>
+            <script>
+            document.addEventListener('DOMContentLoaded', function () {
+              // Make privacy mode cards selectable
+              document.querySelectorAll('.mode-card').forEach(function(card){
+                card.setAttribute('tabindex','0');
+                card.setAttribute('role','button');
+                card.addEventListener('click', function(){
+                  document.querySelectorAll('.mode-card').forEach(function(c){ c.classList.remove('selected'); });
+                  card.classList.add('selected');
+                  var nameEl = card.querySelector('.mode-name');
+                  var pill = document.querySelector('.info-pill');
+                  if (nameEl && pill) pill.textContent = nameEl.textContent + ' Mode active';
+                  // persist selection to localStorage per room
+                  try {
+                    var title = document.querySelector('.page-title')?.textContent?.split('—')?.[0]?.trim();
+                    if (title) {
+                      var saved = JSON.parse(localStorage.getItem('wishhub_room_modes') || '{}');
+                      saved[title] = nameEl.textContent;
+                      localStorage.setItem('wishhub_room_modes', JSON.stringify(saved));
+                    }
+                  } catch(e){}
+                });
+                card.addEventListener('keydown', function(e){ if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); card.click(); } });
+              });
+
+              // Toggle per-member visibility
+              document.querySelectorAll('.vis-row').forEach(function(row){
+                var toggle = row.querySelector('.toggle');
+                var label = row.querySelector('.toggle-label');
+                if (!toggle || !label) return;
+                // accessibility
+                toggle.setAttribute('role','switch');
+                toggle.setAttribute('tabindex','0');
+                toggle.setAttribute('aria-checked', toggle.classList.contains('on') ? 'true' : 'false');
+                toggle.style.cursor = 'pointer';
+                toggle.addEventListener('click', function(){
+                  var isOn = toggle.classList.contains('on');
+                  toggle.classList.toggle('on', !isOn);
+                  toggle.classList.toggle('off', isOn);
+                  label.textContent = !isOn ? 'Visible' : 'Hidden';
+                  toggle.setAttribute('aria-checked', (!isOn).toString());
+                });
+                toggle.addEventListener('keydown', function(e){ if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle.click(); } });
+              });
+            });
+            </script>
+      </div>
+
+      <!-- Members -->
+      <div class="section-card">
+        <div class="section-head">
+          <div>
+            <div class="section-title"><i class="ti ti-users" aria-hidden="true"></i> Members <span style="font-size:12px;font-weight:400;color:var(--muted);margin-left:4px;">5</span></div>
+            <div class="section-sub">Manage roles and remove members</div>
+          </div>
+          <button class="btn-ghost"><i class="ti ti-user-plus" aria-hidden="true"></i> Invite</button>
+        </div>
+        <div class="member-list">
+          <div class="member-row" style="min-height:72px;align-items:center;justify-content:center;color:var(--muted);">
+            No members yet — invite people using the code below.
+          </div>
+        </div>
+      </div>
+
+      <!-- Invite code -->
+      <div class="section-card">
+        <div class="section-head">
+          <div>
+            <div class="section-title"><i class="ti ti-link" aria-hidden="true"></i> Invite link & code</div>
+            <div class="section-sub">Share with friends to let them join</div>
+          </div>
+        </div>
+        <div class="invite-row">
+          <span class="invite-code"><span class="skeleton" style="width:120px;height:18px;display:inline-block">&nbsp;</span></span>
+          <button class="btn-ghost"><i class="ti ti-copy" aria-hidden="true"></i> Copy code</button>
+          <button class="btn-ghost"><i class="ti ti-link" aria-hidden="true"></i> Copy link</button>
+          <button class="btn-ghost"><i class="ti ti-refresh" aria-hidden="true"></i> Regenerate</button>
+        </div>
+      </div>
+
+      <div class="footer-actions">
+        <button class="btn-danger"><i class="ti ti-trash" aria-hidden="true"></i> Delete room</button>
+        <button class="btn-save"><i class="ti ti-check" aria-hidden="true"></i> Save changes</button>
+      </div>
+    </div>
+  </div>
+</div>

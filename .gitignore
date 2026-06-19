@@ -1,0 +1,4 @@
+/.DS_Store
+/prototype/dist/
+node_modules/
+*.log
