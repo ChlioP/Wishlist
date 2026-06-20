@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { getRoomMode, setRoomMode } from '../utils/storage'
+import { appendActivity } from '../utils/activity'
 import { getData } from '../mockstore'
 
 const modes = ['Private','Shared','Public']
@@ -16,6 +17,7 @@ export default function AdminSettings({ demoMode }){
   function activate(mode){
     setSelected(mode)
     setRoomMode(room, mode)
+    appendActivity({ action: 'set_room_mode', room, mode })
   }
 
   function toggleMember(name){

@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { getRoomMode, setRoomMode } from '../utils/storage'
+import { appendActivity } from '../utils/activity'
 import { getData } from '../mockstore'
 
 function nextMode(current) {
@@ -14,9 +15,10 @@ export default function Dashboard({ demoMode }){
 
   useEffect(()=>{
     const data = getData()
-    setRooms(demoMode === 'sample' ? data.rooms : [])
+    const roomList = demoMode === 'sample' && Array.isArray(data.rooms) ? data.rooms : []
+    setRooms(roomList)
     const initial = {}
-    (demoMode === 'sample' ? data.rooms : []).forEach(r => initial[r.name] = getRoomMode(r.name))
+    roomList.forEach(r => { if(r && r.name) initial[r.name] = getRoomMode(r.name) })
     setModes(initial)
   },[demoMode])
 
@@ -24,16 +26,17 @@ export default function Dashboard({ demoMode }){
     const next = nextMode(modes[room] || 'Shared')
     setRoomMode(room,next)
     setModes(s => ({ ...s, [room]: next }))
+    appendActivity({ action: 'set_room_mode', room, mode: next })
   }
 
   return (
     <section>
       <h2>Dashboard</h2>
       <ul className="rooms-list">
-        {rooms.length === 0 ? (
+        {(Array.isArray(rooms) && rooms.length === 0) ? (
           <li className="room-row" style={{minHeight:72,alignItems:'center',color:'var(--muted)'}}>No rooms yet — create or join a room.</li>
         ) : (
-          rooms.map(r => (
+          (Array.isArray(rooms) ? rooms : []).map(r => (
             <li key={r.name} className="room-row">
               <div>
                 <div className="room-title">{r.name}</div>
