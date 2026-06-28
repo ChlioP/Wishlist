@@ -1,0 +1,74 @@
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function room(roomId) {
+      return firestore.get(
+        /databases/(default)/documents/rooms/$(roomId)
+      ).data;
+    }
+
+    function membership(roomId, userId) {
+      return firestore.get(
+        /databases/(default)/documents/rooms/$(roomId)/members/$(userId)
+      ).data;
+    }
+
+    function activeMember(roomId) {
+      return signedIn()
+        && firestore.exists(
+          /databases/(default)/documents/rooms/$(roomId)/members/$(request.auth.uid)
+        )
+        && membership(roomId, request.auth.uid).status == 'active';
+    }
+
+    function roomManager(roomId) {
+      return activeMember(roomId)
+        && membership(roomId, request.auth.uid).role in ['owner', 'admin'];
+    }
+
+    function wishlist(wishlistId) {
+      return firestore.get(
+        /databases/(default)/documents/wishlists/$(wishlistId)
+      ).data;
+    }
+
+    function canViewWishlist(roomId, wishlistId) {
+      let list = wishlist(wishlistId);
+      return list.roomId == roomId
+        && activeMember(roomId)
+        && (
+          list.ownerId == request.auth.uid
+          || roomManager(roomId)
+          || room(roomId).privacyMode == 'public'
+          || (
+            room(roomId).privacyMode == 'shared'
+            && firestore.exists(
+              /databases/(default)/documents/rooms/$(roomId)/visibilityGrants/$(request.auth.uid + '_' + list.ownerId)
+            )
+          )
+        );
+    }
+
+    match /rooms/{roomId}/wishlists/{wishlistId}/items/{itemId}/{fileName} {
+      allow read: if canViewWishlist(roomId, wishlistId);
+      allow create, update: if signedIn()
+        && activeMember(roomId)
+        && wishlist(wishlistId).roomId == roomId
+        && wishlist(wishlistId).ownerId == request.auth.uid
+        && request.resource.size <= 5 * 1024 * 1024
+        && request.resource.contentType.matches(
+          'image/(jpeg|png|webp|gif)'
+        );
+      allow delete: if signedIn()
+        && (
+          wishlist(wishlistId).ownerId == request.auth.uid
+          || roomManager(roomId)
+        );
+    }
+  }
+}

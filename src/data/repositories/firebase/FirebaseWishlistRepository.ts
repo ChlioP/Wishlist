@@ -28,6 +28,7 @@ import { FirebaseRoomRepository } from "@/data/repositories/firebase/FirebaseRoo
 import {
   mapWishlist,
   mapWishlistItem,
+  mapVisibilityGrant,
   timestampToIso,
 } from "@/data/repositories/firebase/firestoreMappers";
 import { canViewWishlist } from "@/features/permissions/permissionRules";
@@ -65,19 +66,9 @@ export class FirebaseWishlistRepository implements WishlistRepository {
     roomId: EntityId,
     viewerId: EntityId,
   ): Promise<Wishlist[]> {
-    const snapshots = await getDocs(
-      query(
-        collection(getFirebaseFirestore(), "wishlists"),
-        where("roomId", "==", roomId),
-      ),
-    );
-    const wishlists = snapshots.docs.map((snapshot) =>
-      mapWishlist(snapshot.id, snapshot.data()),
-    );
-    const [room, members, grants] = await Promise.all([
+    const [room, members] = await Promise.all([
       this.rooms.getById(roomId),
       this.rooms.listMembers(roomId),
-      this.rooms.listVisibilityGrants(roomId),
     ]);
     if (!room) return [];
     const actorMembership = members.find(
@@ -85,7 +76,57 @@ export class FirebaseWishlistRepository implements WishlistRepository {
     );
     if (!actorMembership) return [];
     const actor = actorMembership.user;
-    return wishlists.filter((wishlist) =>
+    const grants =
+      actorMembership.role === "owner" ||
+      actorMembership.role === "admin"
+        ? await this.rooms.listVisibilityGrants(roomId)
+        : room.privacyMode === "shared"
+          ? (
+              await getDocs(
+                query(
+                  collection(
+                    getFirebaseFirestore(),
+                    "rooms",
+                    roomId,
+                    "visibilityGrants",
+                  ),
+                  where("viewerUserId", "==", viewerId),
+                ),
+              )
+            ).docs.map((snapshot) =>
+              mapVisibilityGrant(snapshot.id, roomId, snapshot.data()),
+            )
+          : [];
+    if (
+      actorMembership.role === "owner" ||
+      actorMembership.role === "admin" ||
+      room.privacyMode === "public"
+    ) {
+      const snapshots = await getDocs(
+        query(
+          collection(getFirebaseFirestore(), "wishlists"),
+          where("roomId", "==", roomId),
+        ),
+      );
+      return snapshots.docs.map((snapshot) =>
+        mapWishlist(snapshot.id, snapshot.data()),
+      );
+    }
+
+    const visibleOwnerIds = new Set<string>([viewerId]);
+    if (room.privacyMode === "shared") {
+      grants
+        .filter((grant) => grant.viewerUserId === viewerId)
+        .forEach((grant) => visibleOwnerIds.add(grant.wishlistOwnerId));
+    }
+    const wishlists = await Promise.all(
+      Array.from(visibleOwnerIds).map((ownerId) =>
+        this.getOwn(roomId, ownerId),
+      ),
+    );
+    return wishlists
+      .filter((wishlist): wishlist is Wishlist => wishlist !== null)
+      .filter((wishlist) =>
       canViewWishlist({
         actor,
         grants,
