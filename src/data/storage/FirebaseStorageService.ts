@@ -10,13 +10,15 @@ import type {
   ItemImageService,
   ItemImageUpload,
 } from "@/data/storage/contracts";
-import { validateImage } from "@/data/storage/imageValidation";
+import {
+  MAX_ITEM_IMAGE_BYTES,
+  validateImage,
+} from "@/data/storage/imageValidation";
 import { getFirebaseStorage } from "@/lib/firebase";
 
-const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
 export class FirebaseStorageService implements ItemImageService {
   async uploadItemImage(input: ItemImageUpload): Promise<string> {
-    validateImage(input.file, MAX_IMAGE_BYTES);
+    validateImage(input.file, MAX_ITEM_IMAGE_BYTES);
     const filename = `${crypto.randomUUID()}-${sanitizeFilename(
       input.file.name,
     )}`;

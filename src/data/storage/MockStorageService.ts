@@ -3,13 +3,14 @@ import type {
   ItemImageService,
   ItemImageUpload,
 } from "@/data/storage/contracts";
-import { validateImage } from "@/data/storage/imageValidation";
-
-const MAX_MOCK_IMAGE_BYTES = 1024 * 1024;
+import {
+  MAX_ITEM_IMAGE_BYTES,
+  validateImage,
+} from "@/data/storage/imageValidation";
 
 export class MockStorageService implements ItemImageService {
   async uploadItemImage({ file }: ItemImageUpload): Promise<string> {
-    validateImage(file, MAX_MOCK_IMAGE_BYTES);
+    validateImage(file, MAX_ITEM_IMAGE_BYTES);
     return readAsDataUrl(file);
   }
 }

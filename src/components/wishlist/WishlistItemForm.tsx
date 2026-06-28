@@ -3,6 +3,11 @@ import { ImageUp } from "lucide-react";
 
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
+import { RepositoryError } from "@/data/repositories/errors";
+import {
+  MAX_ITEM_IMAGE_BYTES,
+  validateImage,
+} from "@/data/storage/imageValidation";
 import type {
   WishlistItem,
   WishlistItemPriority,
@@ -59,6 +64,7 @@ export function WishlistItemForm({
 }: WishlistItemFormProps) {
   const [values, setValues] = useState(emptyValues);
   const [error, setError] = useState("");
+  const [imageError, setImageError] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
@@ -84,6 +90,7 @@ export function WishlistItemForm({
         : emptyValues,
     );
     setError("");
+    setImageError("");
   }, [item]);
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
@@ -95,6 +102,18 @@ export function WishlistItemForm({
     if (Number(values.quantityDesired) < 1) {
       setError("Quantity must be at least one.");
       return;
+    }
+    if (values.imageFile) {
+      try {
+        validateImage(values.imageFile, MAX_ITEM_IMAGE_BYTES);
+      } catch (caught) {
+        setImageError(
+          caught instanceof RepositoryError
+            ? caught.message
+            : "Choose a valid image file.",
+        );
+        return;
+      }
     }
     setSubmitting(true);
     setError("");
@@ -234,21 +253,54 @@ export function WishlistItemForm({
               : "Choose an image file"}
           </span>
           <span className="mt-1 text-xs text-muted">
-            JPEG, PNG, WebP, or GIF
+            JPEG, PNG, WebP, or GIF · maximum 5 MB
           </span>
           <input
             accept="image/gif,image/jpeg,image/png,image/webp"
             className="sr-only"
-            onChange={(event) =>
-              setValues((current) => ({
-                ...current,
-                imageFile: event.target.files?.[0] ?? null,
-              }))
-            }
+            onChange={(event) => {
+              const file = event.target.files?.[0] ?? null;
+              if (!file) {
+                setImageError("");
+                setValues((current) => ({
+                  ...current,
+                  imageFile: null,
+                }));
+                return;
+              }
+              try {
+                validateImage(file, MAX_ITEM_IMAGE_BYTES);
+                setImageError("");
+                setValues((current) => ({
+                  ...current,
+                  imageFile: file,
+                }));
+              } catch (caught) {
+                setImageError(
+                  caught instanceof RepositoryError
+                    ? caught.message
+                    : "Choose a valid image file.",
+                );
+                setValues((current) => ({
+                  ...current,
+                  imageFile: null,
+                }));
+                event.currentTarget.value = "";
+              }
+            }}
             type="file"
           />
         </span>
       </label>
+
+      {imageError ? (
+        <div
+          className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
+          role="alert"
+        >
+          {imageError}
+        </div>
+      ) : null}
 
       {uploadError ? (
         <div

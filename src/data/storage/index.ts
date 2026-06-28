@@ -3,6 +3,11 @@ import type {
   ItemImageUpload,
 } from "@/data/storage/contracts";
 import { MockStorageService } from "@/data/storage/MockStorageService";
+import {
+  MAX_ITEM_IMAGE_BYTES,
+  validateImage,
+} from "@/data/storage/imageValidation";
+import { prepareImageForUpload } from "@/data/storage/imageProcessing";
 import { dataProvider } from "@/lib/firebaseConfig";
 
 const mockStorageService = new MockStorageService();
@@ -21,7 +26,12 @@ function getSelectedService(): Promise<ItemImageService> {
 
 export const itemImageService: ItemImageService = {
   async uploadItemImage(input) {
-    return (await getSelectedService()).uploadItemImage(input);
+    validateImage(input.file, MAX_ITEM_IMAGE_BYTES);
+    const file = await prepareImageForUpload(input.file);
+    return (await getSelectedService()).uploadItemImage({
+      ...input,
+      file,
+    });
   },
 };
 
