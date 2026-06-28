@@ -14,6 +14,8 @@ import {
   where,
   writeBatch,
 } from "firebase/firestore";
+import type { DocumentReference } from "firebase/firestore";
+import { FirebaseError } from "firebase/app";
 
 import type {
   RoomMember,
@@ -28,7 +30,12 @@ import {
   readOnlyError,
 } from "@/data/repositories/firebase/firestoreMappers";
 import { RepositoryError } from "@/data/repositories/errors";
-import { getFirebaseFirestore } from "@/lib/firebase";
+import { defaultUserPreferences } from "@/features/auth/defaultPreferences";
+import { canManageRoom } from "@/features/permissions/permissionRules";
+import {
+  getFirebaseAuth,
+  getFirebaseFirestore,
+} from "@/lib/firebase";
 import type {
   EntityId,
   JoinRequest,
@@ -36,6 +43,7 @@ import type {
   RoomMembership,
   RoomPrivacyMode,
   RoomRole,
+  User,
   VisibilityGrant,
 } from "@/types/domain";
 
@@ -198,25 +206,86 @@ export class FirebaseRoomRepository implements RoomRepository {
     if (patch.name !== undefined && !patch.name.trim()) {
       throw new RepositoryError("validation", "Room name cannot be empty.");
     }
-    await updateDoc(doc(getFirebaseFirestore(), "rooms", roomId), {
-      ...Object.fromEntries(
-        Object.entries(patch).map(([key, value]) => [
-          key,
-          value === undefined
-            ? deleteField()
-            : key === "name" && typeof value === "string"
-              ? value.trim()
-              : value,
-        ]),
-      ),
-      updatedAt: serverTimestamp(),
-    });
+    await this.assertCurrentUserCanManage(room);
+    try {
+      await updateDoc(doc(getFirebaseFirestore(), "rooms", roomId), {
+        ...Object.fromEntries(
+          Object.entries(patch).map(([key, value]) => [
+            key,
+            value === undefined
+              ? deleteField()
+              : key === "name" && typeof value === "string"
+                ? value.trim()
+                : value,
+          ]),
+        ),
+        updatedAt: serverTimestamp(),
+      });
+    } catch (error) {
+      throw translateRoomWriteError(error);
+    }
     return {
       ...room,
       ...patch,
       name: patch.name?.trim() ?? room.name,
       updatedAt: new Date().toISOString(),
     };
+  }
+
+  async deleteRoom(roomId: EntityId): Promise<void> {
+    const firestore = getFirebaseFirestore();
+    const room = await this.getById(roomId);
+    if (!room) {
+      throw new RepositoryError("not_found", "Room not found.");
+    }
+    await this.assertCurrentUserCanManage(room);
+
+    try {
+      const [
+        memberships,
+        grants,
+        joinRequests,
+        wishlists,
+        reservations,
+      ] = await Promise.all([
+        getDocs(collection(firestore, "rooms", roomId, "members")),
+        getDocs(
+          collection(firestore, "rooms", roomId, "visibilityGrants"),
+        ),
+        getDocs(collection(firestore, "rooms", roomId, "joinRequests")),
+        getDocs(
+          query(
+            collection(firestore, "wishlists"),
+            where("roomId", "==", roomId),
+          ),
+        ),
+        getDocs(
+          query(
+            collection(firestore, "reservations"),
+            where("roomId", "==", roomId),
+          ),
+        ),
+      ]);
+      const itemSnapshots = await Promise.all(
+        wishlists.docs.map((wishlist) =>
+          getDocs(collection(wishlist.ref, "items")),
+        ),
+      );
+      const references: DocumentReference[] = [
+        ...memberships.docs.map((snapshot) => snapshot.ref),
+        ...grants.docs.map((snapshot) => snapshot.ref),
+        ...joinRequests.docs.map((snapshot) => snapshot.ref),
+        ...itemSnapshots.flatMap((items) =>
+          items.docs.map((snapshot) => snapshot.ref),
+        ),
+        ...wishlists.docs.map((snapshot) => snapshot.ref),
+        ...reservations.docs.map((snapshot) => snapshot.ref),
+        doc(firestore, "rooms", roomId),
+      ];
+      await deleteInBatches(references);
+    } catch (error) {
+      throw translateRoomWriteError(error);
+    }
   }
 
   async joinByCode(
@@ -330,6 +399,13 @@ export class FirebaseRoomRepository implements RoomRepository {
     if (!room) {
       throw new RepositoryError("not_found", "Room not found.");
     }
+    const actorId = await this.assertCurrentUserCanManage(room);
+    if (actorId !== input.grantedByUserId) {
+      throw new RepositoryError(
+        "forbidden",
+        "Visibility changes must be attributed to the signed-in user.",
+      );
+    }
     const members = await this.listMembers(input.roomId);
     const administrator = members.find(
       (member) => member.userId === input.grantedByUserId,
@@ -359,16 +435,20 @@ export class FirebaseRoomRepository implements RoomRepository {
       "visibilityGrants",
       `${input.viewerUserId}_${input.wishlistOwnerId}`,
     );
-    if (!input.allowed) {
-      await deleteDoc(grantRef);
-      return;
+    try {
+      if (!input.allowed) {
+        await deleteDoc(grantRef);
+        return;
+      }
+      await setDoc(grantRef, {
+        viewerUserId: input.viewerUserId,
+        wishlistOwnerId: input.wishlistOwnerId,
+        grantedByUserId: input.grantedByUserId,
+        createdAt: serverTimestamp(),
+      });
+    } catch (error) {
+      throw translateRoomWriteError(error);
     }
-    await setDoc(grantRef, {
-      viewerUserId: input.viewerUserId,
-      wishlistOwnerId: input.wishlistOwnerId,
-      grantedByUserId: input.grantedByUserId,
-      createdAt: serverTimestamp(),
-    });
   }
 
   async setPrivacyMode(
@@ -377,6 +457,84 @@ export class FirebaseRoomRepository implements RoomRepository {
   ): Promise<Room> {
     return this.update(roomId, { privacyMode });
   }
+
+  private async assertCurrentUserCanManage(room: Room): Promise<string> {
+    const firebaseUser = getFirebaseAuth().currentUser;
+    if (!firebaseUser) {
+      throw new RepositoryError("unauthenticated", "Sign in is required.");
+    }
+    const membershipSnapshot = await getDoc(
+      doc(
+        getFirebaseFirestore(),
+        "rooms",
+        room.id,
+        "members",
+        firebaseUser.uid,
+      ),
+    );
+    if (!membershipSnapshot.exists()) {
+      throw new RepositoryError(
+        "forbidden",
+        "You are not a member of this room.",
+      );
+    }
+    const membership = mapMembership(
+      membershipSnapshot.id,
+      room.id,
+      membershipSnapshot.data(),
+    );
+    const timestamp = new Date().toISOString();
+    const actor: User = {
+      id: firebaseUser.uid,
+      displayName:
+        firebaseUser.displayName ?? firebaseUser.email ?? "Room member",
+      email: firebaseUser.email ?? "",
+      avatarUrl: firebaseUser.photoURL ?? undefined,
+      preferences: defaultUserPreferences,
+      createdAt: timestamp,
+      updatedAt: timestamp,
+    };
+    if (!canManageRoom({ actor, membership, room })) {
+      throw new RepositoryError(
+        "forbidden",
+        "Owner or administrator permission is required.",
+      );
+    }
+    return firebaseUser.uid;
+  }
+}
+
+async function deleteInBatches(
+  references: DocumentReference[],
+): Promise<void> {
+  const firestore = getFirebaseFirestore();
+  const batchSize = 400;
+  for (let index = 0; index < references.length; index += batchSize) {
+    const batch = writeBatch(firestore);
+    references
+      .slice(index, index + batchSize)
+      .forEach((reference) => batch.delete(reference));
+    await batch.commit();
+  }
+}
+
+function translateRoomWriteError(error: unknown): RepositoryError {
+  if (error instanceof RepositoryError) return error;
+  if (error instanceof FirebaseError) {
+    if (error.code === "permission-denied") {
+      return new RepositoryError(
+        "forbidden",
+        "Firestore denied this change. Owner or administrator permission is required.",
+      );
+    }
+    if (error.code === "not-found") {
+      return new RepositoryError("not_found", "Room not found.");
+    }
+  }
+  return new RepositoryError(
+    "validation",
+    "The room change could not be completed.",
+  );
 }
 
 function createInviteCode(name: string): string {

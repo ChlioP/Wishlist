@@ -50,6 +50,7 @@ export interface RoomRepository {
       Pick<Room, "name" | "description" | "privacyMode">
     >,
   ): Promise<Room>;
+  deleteRoom(roomId: EntityId): Promise<void>;
   joinByCode(
     userId: EntityId,
     inviteCode: string,

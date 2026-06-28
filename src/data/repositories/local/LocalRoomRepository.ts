@@ -110,6 +110,51 @@ export class LocalRoomRepository implements RoomRepository {
     return updated;
   }
 
+  async deleteRoom(roomId: EntityId): Promise<void> {
+    const database = this.store.read();
+    const room = requireRoom(database.rooms, roomId);
+    this.assertCurrentUserCanManage(database.currentUserId, room);
+    const wishlistIds = new Set(
+      database.wishlists
+        .filter((wishlist) => wishlist.roomId === roomId)
+        .map((wishlist) => wishlist.id),
+    );
+    const itemIds = new Set(
+      database.wishlistItems
+        .filter((item) => wishlistIds.has(item.wishlistId))
+        .map((item) => item.id),
+    );
+
+    this.store.mutate((next) => {
+      next.rooms = next.rooms.filter((candidate) => candidate.id !== roomId);
+      next.memberships = next.memberships.filter(
+        (membership) => membership.roomId !== roomId,
+      );
+      next.visibilityGrants = next.visibilityGrants.filter(
+        (grant) => grant.roomId !== roomId,
+      );
+      next.joinRequests = next.joinRequests.filter(
+        (request) => request.roomId !== roomId,
+      );
+      next.wishlists = next.wishlists.filter(
+        (wishlist) => wishlist.roomId !== roomId,
+      );
+      next.wishlistItems = next.wishlistItems.filter(
+        (item) => !wishlistIds.has(item.wishlistId),
+      );
+      next.reservations = next.reservations.filter(
+        (reservation) =>
+          reservation.roomId !== roomId && !itemIds.has(reservation.itemId),
+      );
+      next.activityEvents = next.activityEvents.filter(
+        (event) => event.roomId !== roomId,
+      );
+      next.notifications = next.notifications.filter(
+        (notification) => notification.roomId !== roomId,
+      );
+    });
+  }
+
   async joinByCode(
     userId: EntityId,
     code: string,

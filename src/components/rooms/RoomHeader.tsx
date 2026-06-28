@@ -1,10 +1,17 @@
-import { ArrowLeft, LockKeyhole, Share2, UsersRound } from "lucide-react";
+import {
+  ArrowLeft,
+  LockKeyhole,
+  Settings,
+  Share2,
+  UsersRound,
+} from "lucide-react";
 import { Link } from "react-router-dom";
 
 import { Badge } from "@/components/ui/Badge";
 import type { Room } from "@/types/domain";
 
 interface RoomHeaderProps {
+  canManage?: boolean;
   memberCount: number;
   room: Room;
 }
@@ -15,7 +22,11 @@ const privacyConfig = {
   public: { icon: UsersRound, variant: "success" as const },
 };
 
-export function RoomHeader({ memberCount, room }: RoomHeaderProps) {
+export function RoomHeader({
+  canManage = false,
+  memberCount,
+  room,
+}: RoomHeaderProps) {
   const privacy = privacyConfig[room.privacyMode];
   const PrivacyIcon = privacy.icon;
 
@@ -47,11 +58,22 @@ export function RoomHeader({ memberCount, room }: RoomHeaderProps) {
             </p>
           </div>
         </div>
-        <div className="flex shrink-0 items-center gap-2 rounded-2xl bg-cream px-4 py-3 text-sm text-muted">
-          <UsersRound aria-hidden="true" className="h-4 w-4" />
-          <span>
-            {memberCount} {memberCount === 1 ? "member" : "members"}
-          </span>
+        <div className="flex shrink-0 flex-wrap items-center gap-3">
+          <div className="flex items-center gap-2 rounded-2xl bg-cream px-4 py-3 text-sm text-muted">
+            <UsersRound aria-hidden="true" className="h-4 w-4" />
+            <span>
+              {memberCount} {memberCount === 1 ? "member" : "members"}
+            </span>
+          </div>
+          {canManage ? (
+            <Link
+              className="inline-flex min-h-11 items-center gap-2 rounded-full border border-soft bg-white px-4 py-2.5 text-sm font-medium text-ink transition-colors hover:bg-blush"
+              to={`/rooms/${room.id}/settings`}
+            >
+              <Settings aria-hidden="true" className="h-4 w-4" />
+              Room settings
+            </Link>
+          ) : null}
         </div>
       </div>
     </header>

@@ -10,6 +10,7 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import type { RoomMember } from "@/data/repositories/contracts";
 import { localRepositories } from "@/data/repositories/local";
 import { useAuth } from "@/features/auth/AuthContext";
+import { canManageRoom } from "@/features/permissions/permissionRules";
 import type { Room } from "@/types/domain";
 
 interface RoomDetailData {
@@ -114,7 +115,20 @@ export function RoomDetailPage() {
 
   return (
     <div className="space-y-6">
-      <RoomHeader memberCount={data.members.length} room={data.room} />
+      <RoomHeader
+        canManage={Boolean(
+          user &&
+            canManageRoom({
+              actor: user,
+              membership: data.members.find(
+                (member) => member.userId === user.id,
+              ),
+              room: data.room,
+            }),
+        )}
+        memberCount={data.members.length}
+        room={data.room}
+      />
       <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1.2fr)_minmax(18rem,0.8fr)]">
         <RoomMemberList members={data.members} />
         <InviteCodePanel inviteCode={data.room.inviteCode} />

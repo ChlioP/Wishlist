@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { ShieldCheck, UsersRound } from "lucide-react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 
 import { AdminActivityLog } from "@/components/admin/AdminActivityLog";
 import { DangerZone } from "@/components/admin/DangerZone";
@@ -14,6 +14,7 @@ import { Avatar } from "@/components/ui/Avatar";
 import { Badge } from "@/components/ui/Badge";
 import { Card } from "@/components/ui/Card";
 import type { RoomMember } from "@/data/repositories/contracts";
+import { RepositoryError } from "@/data/repositories/errors";
 import { localRepositories } from "@/data/repositories/local";
 import { useAuth } from "@/features/auth/AuthContext";
 import { canManageRoom } from "@/features/permissions/permissionRules";
@@ -35,6 +36,7 @@ interface SettingsData {
 
 export function RoomSettingsPage() {
   const { roomId } = useParams();
+  const navigate = useNavigate();
   const { user } = useAuth();
   const [data, setData] = useState<SettingsData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -102,13 +104,32 @@ export function RoomSettingsPage() {
 
   async function changePrivacy(privacyMode: RoomPrivacyMode) {
     if (!roomId) return;
+    if (privacyMode === data?.room.privacyMode) return;
     setError("");
     try {
       await localRepositories.rooms.setPrivacyMode(roomId, privacyMode);
       await logAction("room_updated", { privacyMode });
       await loadSettings();
-    } catch {
-      setError("Privacy mode could not be updated.");
+    } catch (caught) {
+      setError(
+        repositoryErrorMessage(
+          caught,
+          "Privacy mode could not be updated.",
+        ),
+      );
+    }
+  }
+
+  async function deleteRoom() {
+    if (!roomId) return;
+    setError("");
+    try {
+      await localRepositories.rooms.deleteRoom(roomId);
+      navigate("/rooms", { replace: true });
+    } catch (caught) {
+      setError(
+        repositoryErrorMessage(caught, "The room could not be deleted."),
+      );
     }
   }
 
@@ -266,10 +287,21 @@ export function RoomSettingsPage() {
           <AdminActivityLog events={data.activity} />
         </div>
 
-        <DangerZone />
+        <DangerZone
+          canDelete={allowed}
+          onDelete={deleteRoom}
+          roomName={data.room.name}
+        />
       </div>
     </PermissionBoundary>
   );
+}
+
+function repositoryErrorMessage(
+  error: unknown,
+  fallback: string,
+): string {
+  return error instanceof RepositoryError ? error.message : fallback;
 }
 
 interface MemberManagementProps {

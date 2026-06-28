@@ -1,9 +1,32 @@
 import { AlertTriangle } from "lucide-react";
+import { useState } from "react";
 
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 
-export function DangerZone() {
+interface DangerZoneProps {
+  canDelete: boolean;
+  onDelete: () => Promise<void>;
+  roomName: string;
+}
+
+export function DangerZone({
+  canDelete,
+  onDelete,
+  roomName,
+}: DangerZoneProps) {
+  const [confirming, setConfirming] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+
+  async function handleDelete() {
+    setDeleting(true);
+    try {
+      await onDelete();
+    } finally {
+      setDeleting(false);
+    }
+  }
+
   return (
     <section aria-labelledby="danger-zone-heading">
       <h2
@@ -18,13 +41,45 @@ export function DangerZone() {
           <div>
             <h3 className="text-sm font-semibold text-ink">Delete this room</h3>
             <p className="mt-1 text-xs leading-5 text-muted">
-              Permanent room deletion is intentionally disabled in the mock
-              implementation.
+              Permanently delete {roomName}, its memberships, wishlists, items,
+              reservations, and visibility settings.
             </p>
+            {!canDelete ? (
+              <p className="mt-2 text-xs font-medium text-red-700">
+                Owner or administrator permission is required.
+              </p>
+            ) : null}
           </div>
-          <Button disabled variant="danger">
-            Delete room
-          </Button>
+          {!confirming ? (
+            <Button
+              disabled={!canDelete}
+              onClick={() => setConfirming(true)}
+              variant="danger"
+            >
+              Delete room
+            </Button>
+          ) : (
+            <div
+              aria-label="Confirm room deletion"
+              className="flex flex-wrap gap-2"
+              role="group"
+            >
+              <Button
+                disabled={deleting}
+                onClick={() => setConfirming(false)}
+                variant="secondary"
+              >
+                Cancel
+              </Button>
+              <Button
+                disabled={deleting}
+                onClick={() => void handleDelete()}
+                variant="danger"
+              >
+                {deleting ? "Deleting…" : "Delete permanently"}
+              </Button>
+            </div>
+          )}
         </div>
       </Card>
     </section>
