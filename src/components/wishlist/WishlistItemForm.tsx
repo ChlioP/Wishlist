@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { ImageUp } from "lucide-react";
 
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -14,6 +15,7 @@ export interface WishlistItemFormValues {
   description: string;
   estimatedPrice: string;
   imageUrl: string;
+  imageFile: File | null;
   name: string;
   notes: string;
   priority: WishlistItemPriority;
@@ -26,6 +28,8 @@ interface WishlistItemFormProps {
   item?: WishlistItem | null;
   onCancel: () => void;
   onSubmit: (values: WishlistItemFormValues) => Promise<void>;
+  uploadError?: string;
+  uploading?: boolean;
 }
 
 const emptyValues: WishlistItemFormValues = {
@@ -34,6 +38,7 @@ const emptyValues: WishlistItemFormValues = {
   description: "",
   estimatedPrice: "",
   imageUrl: "",
+  imageFile: null,
   name: "",
   notes: "",
   priority: "medium",
@@ -49,6 +54,8 @@ export function WishlistItemForm({
   item,
   onCancel,
   onSubmit,
+  uploadError,
+  uploading = false,
 }: WishlistItemFormProps) {
   const [values, setValues] = useState(emptyValues);
   const [error, setError] = useState("");
@@ -66,6 +73,7 @@ export function WishlistItemForm({
                 ? ""
                 : String(item.estimatedPriceCents / 100),
             imageUrl: item.imageUrl ?? "",
+            imageFile: null,
             name: item.name,
             notes: item.notes ?? "",
             priority: item.priority,
@@ -213,6 +221,52 @@ export function WishlistItemForm({
         type="url"
         value={values.imageUrl}
       />
+      <label className="block text-sm font-medium text-ink">
+        Upload image
+        <span className="mt-2 flex min-h-24 cursor-pointer flex-col items-center justify-center rounded-2xl border border-dashed border-soft bg-white px-4 py-4 text-center transition-colors hover:bg-blush/40 focus-within:outline focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-primary-dark">
+          <ImageUp
+            aria-hidden="true"
+            className="h-5 w-5 text-primary-dark"
+          />
+          <span className="mt-2 text-xs font-medium text-ink">
+            {values.imageFile
+              ? values.imageFile.name
+              : "Choose an image file"}
+          </span>
+          <span className="mt-1 text-xs text-muted">
+            JPEG, PNG, WebP, or GIF
+          </span>
+          <input
+            accept="image/gif,image/jpeg,image/png,image/webp"
+            className="sr-only"
+            onChange={(event) =>
+              setValues((current) => ({
+                ...current,
+                imageFile: event.target.files?.[0] ?? null,
+              }))
+            }
+            type="file"
+          />
+        </span>
+      </label>
+
+      {uploadError ? (
+        <div
+          className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
+          role="alert"
+        >
+          {uploadError}
+        </div>
+      ) : null}
+      {uploading ? (
+        <div
+          aria-live="polite"
+          className="rounded-2xl border border-soft bg-blush/50 px-4 py-3 text-sm text-primary-dark"
+          role="status"
+        >
+          Uploading image…
+        </div>
+      ) : null}
 
       {item ? (
         <label className="block text-sm font-medium text-ink">
@@ -247,11 +301,17 @@ export function WishlistItemForm({
       </label>
 
       <div className="flex justify-end gap-3 border-t border-soft pt-5">
-        <Button onClick={onCancel} variant="secondary">
+        <Button disabled={uploading} onClick={onCancel} variant="secondary">
           Cancel
         </Button>
-        <Button disabled={submitting} type="submit">
-          {submitting ? "Saving…" : item ? "Save changes" : "Add item"}
+        <Button disabled={submitting || uploading} type="submit">
+          {uploading
+            ? "Uploading image…"
+            : submitting
+              ? "Saving…"
+              : item
+                ? "Save changes"
+                : "Add item"}
         </Button>
       </div>
     </form>

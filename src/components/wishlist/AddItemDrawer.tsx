@@ -13,6 +13,8 @@ interface AddItemDrawerProps {
   onClose: () => void;
   onSubmit: (values: WishlistItemFormValues) => Promise<void>;
   open: boolean;
+  uploadError?: string;
+  uploading?: boolean;
 }
 
 export function AddItemDrawer({
@@ -20,8 +22,13 @@ export function AddItemDrawer({
   onClose,
   onSubmit,
   open,
+  uploadError,
+  uploading = false,
 }: AddItemDrawerProps) {
-  const dialogRef = useModalDialog<HTMLElement>(open, onClose);
+  const dialogRef = useModalDialog<HTMLElement>(
+    open,
+    uploading ? () => {} : onClose,
+  );
 
   if (!open) return null;
 
@@ -35,6 +42,7 @@ export function AddItemDrawer({
       <button
         aria-label="Close item drawer"
         className="absolute inset-0 bg-ink/30 backdrop-blur-[2px]"
+        disabled={uploading}
         onClick={onClose}
         type="button"
       />
@@ -59,6 +67,7 @@ export function AddItemDrawer({
           </div>
           <Button
             aria-label="Close drawer"
+            disabled={uploading}
             onClick={onClose}
             size="icon"
             variant="ghost"
@@ -71,6 +80,8 @@ export function AddItemDrawer({
             item={item}
             onCancel={onClose}
             onSubmit={onSubmit}
+            uploadError={uploadError}
+            uploading={uploading}
           />
         </div>
       </section>

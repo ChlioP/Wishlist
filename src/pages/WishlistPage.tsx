@@ -15,7 +15,9 @@ import { WishlistToolbar } from "@/components/wishlist/WishlistToolbar";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { RepositoryError } from "@/data/repositories/errors";
 import { localRepositories } from "@/data/repositories/local";
+import { itemImageService } from "@/data/storage";
 import type {
   NewWishlistItem,
   WishlistItemPatch,
@@ -43,6 +45,8 @@ export function WishlistPage() {
   const [deletingItem, setDeletingItem] = useState<WishlistItem | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [uploadError, setUploadError] = useState("");
+  const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -145,26 +149,59 @@ export function WishlistPage() {
   const drawerOpen = addRouteOpen || editingItem !== null;
 
   function closeDrawer() {
+    if (uploading) return;
     setEditingItem(null);
+    setUploadError("");
     if (addRouteOpen) navigate("/wishlist", { replace: true });
   }
 
   async function saveItem(values: WishlistItemFormValues) {
-    if (!user || !selectedWishlistId) return;
+    if (!user || !selectedWishlistId || !selectedWishlist) return;
+    setUploadError("");
+    let savedItem: WishlistItem;
     if (editingItem) {
       const patch = toItemPatch(values);
-      await localRepositories.wishlists.updateItem(
+      savedItem = await localRepositories.wishlists.updateItem(
         editingItem.id,
         user.id,
         patch,
       );
     } else {
-      await localRepositories.wishlists.addItem(
+      savedItem = await localRepositories.wishlists.addItem(
         selectedWishlistId,
         user.id,
         toNewItem(values),
       );
     }
+
+    if (values.imageFile) {
+      setUploading(true);
+      try {
+        const imageUrl = await itemImageService.uploadItemImage({
+          file: values.imageFile,
+          itemId: savedItem.id,
+          roomId: selectedWishlist.roomId,
+          wishlistId: selectedWishlist.id,
+        });
+        savedItem = await localRepositories.wishlists.updateItem(
+          savedItem.id,
+          user.id,
+          { imageUrl },
+        );
+      } catch (caught) {
+        setEditingItem(savedItem);
+        setUploadError(
+          caught instanceof RepositoryError
+            ? `${caught.message} The item was saved; choose an image and try again.`
+            : "Image upload failed. The item was saved; choose an image and try again.",
+        );
+        await loadItems();
+        return;
+      } finally {
+        setUploading(false);
+      }
+    }
+
     await loadItems();
     closeDrawer();
   }
@@ -201,7 +238,10 @@ export function WishlistPage() {
       ) : (
         <div className="space-y-5">
           <WishlistToolbar
-            onAdd={() => navigate("/wishlist/new")}
+            onAdd={() => {
+              setUploadError("");
+              navigate("/wishlist/new");
+            }}
             onWishlistChange={setSelectedWishlistId}
             selectedWishlistId={selectedWishlistId}
             wishlists={wishlists}
@@ -229,7 +269,10 @@ export function WishlistPage() {
               }
               items={filteredItems}
               onDelete={setDeletingItem}
-              onEdit={setEditingItem}
+              onEdit={(item) => {
+                setUploadError("");
+                setEditingItem(item);
+              }}
             />
           </div>
         </div>
@@ -240,6 +283,8 @@ export function WishlistPage() {
         onClose={closeDrawer}
         onSubmit={saveItem}
         open={drawerOpen && Boolean(selectedWishlistId)}
+        uploadError={uploadError}
+        uploading={uploading}
       />
       <DeleteItemDialog
         item={deletingItem}
