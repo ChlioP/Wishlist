@@ -1,11 +1,21 @@
 import {
   collection,
+  collectionGroup,
+  deleteField,
   doc,
   getDoc,
   getDocs,
   limit,
   query,
+  runTransaction,
+  serverTimestamp,
+  setDoc,
+  updateDoc,
   where,
+} from "firebase/firestore";
+import type {
+  DocumentData,
+  DocumentReference,
 } from "firebase/firestore";
 
 import type {
@@ -18,7 +28,7 @@ import { FirebaseRoomRepository } from "@/data/repositories/firebase/FirebaseRoo
 import {
   mapWishlist,
   mapWishlistItem,
-  readOnlyError,
+  timestampToIso,
 } from "@/data/repositories/firebase/firestoreMappers";
 import { canViewWishlist } from "@/features/permissions/permissionRules";
 import { getFirebaseFirestore } from "@/lib/firebase";
@@ -128,46 +138,300 @@ export class FirebaseWishlistRepository implements WishlistRepository {
   }
 
   async addItem(
-    _wishlistId: EntityId,
-    _actorId: EntityId,
-    _input: NewWishlistItem,
+    wishlistId: EntityId,
+    actorId: EntityId,
+    input: NewWishlistItem,
   ): Promise<WishlistItem> {
-    throw readOnlyError();
+    if (!input.name.trim() || input.quantityDesired < 1) {
+      throw new RepositoryError(
+        "validation",
+        "Item name and a positive quantity are required.",
+      );
+    }
+    const firestore = getFirebaseFirestore();
+    const wishlistSnapshot = await getDoc(
+      doc(firestore, "wishlists", wishlistId),
+    );
+    if (!wishlistSnapshot.exists()) {
+      throw new RepositoryError("not_found", "Wishlist not found.");
+    }
+    const wishlist = mapWishlist(
+      wishlistSnapshot.id,
+      wishlistSnapshot.data(),
+    );
+    if (wishlist.ownerId !== actorId) {
+      throw new RepositoryError(
+        "forbidden",
+        "Wishlist edit permission required.",
+      );
+    }
+    const itemRef = doc(
+      collection(firestore, "wishlists", wishlistId, "items"),
+    );
+    const timestamp = new Date().toISOString();
+    const item: WishlistItem = {
+      ...input,
+      id: itemRef.id,
+      wishlistId,
+      name: input.name.trim(),
+      createdAt: timestamp,
+      updatedAt: timestamp,
+    };
+    await setDoc(
+      itemRef,
+      omitUndefined({
+        ...input,
+        id: item.id,
+        name: item.name,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      }),
+    );
+    return item;
   }
 
   async updateItem(
-    _itemId: EntityId,
-    _actorId: EntityId,
-    _patch: WishlistItemPatch,
+    itemId: EntityId,
+    actorId: EntityId,
+    patch: WishlistItemPatch,
   ): Promise<WishlistItem> {
-    throw readOnlyError();
+    if (patch.name !== undefined && !patch.name.trim()) {
+      throw new RepositoryError("validation", "Item name cannot be empty.");
+    }
+    const itemRef = await this.findItemReference(itemId);
+    const itemSnapshot = await getDoc(itemRef);
+    const wishlistId = itemRef.parent.parent?.id;
+    if (!itemSnapshot.exists() || !wishlistId) {
+      throw new RepositoryError("not_found", "Wishlist item not found.");
+    }
+    const wishlistSnapshot = await getDoc(
+      doc(getFirebaseFirestore(), "wishlists", wishlistId),
+    );
+    if (!wishlistSnapshot.exists()) {
+      throw new RepositoryError("not_found", "Wishlist not found.");
+    }
+    const wishlist = mapWishlist(
+      wishlistSnapshot.id,
+      wishlistSnapshot.data(),
+    );
+    if (wishlist.ownerId !== actorId) {
+      throw new RepositoryError(
+        "forbidden",
+        "Wishlist edit permission required.",
+      );
+    }
+    await updateDoc(itemRef, {
+      ...toFirestorePatch(patch),
+      ...(patch.name === undefined ? {} : { name: patch.name.trim() }),
+      updatedAt: serverTimestamp(),
+    });
+    return {
+      ...mapWishlistItem(itemSnapshot.id, wishlistId, itemSnapshot.data()),
+      ...patch,
+      name:
+        patch.name?.trim() ??
+        mapWishlistItem(itemSnapshot.id, wishlistId, itemSnapshot.data()).name,
+      updatedAt: new Date().toISOString(),
+    };
   }
 
   async removeItem(
-    _itemId: EntityId,
-    _actorId: EntityId,
+    itemId: EntityId,
+    actorId: EntityId,
   ): Promise<void> {
-    throw readOnlyError();
+    await this.updateItem(itemId, actorId, { status: "removed" });
   }
 
   async reserveItem(
-    _itemId: EntityId,
-    _userId: EntityId,
+    itemId: EntityId,
+    userId: EntityId,
   ): Promise<Reservation> {
-    throw readOnlyError();
+    const firestore = getFirebaseFirestore();
+    const itemRef = await this.findItemReference(itemId);
+    const wishlistId = itemRef.parent.parent?.id;
+    if (!wishlistId) {
+      throw new RepositoryError("not_found", "Wishlist item not found.");
+    }
+    const wishlist = await this.getById(wishlistId, userId);
+    if (!wishlist || wishlist.ownerId === userId) {
+      throw new RepositoryError("forbidden", "Item cannot be reserved.");
+    }
+    const reservationRef = doc(firestore, "reservations", itemId);
+    const timestamp = new Date().toISOString();
+    const reservation: Reservation = {
+      id: itemId,
+      roomId: wishlist.roomId,
+      itemId,
+      reservedByUserId: userId,
+      status: "reserved",
+      createdAt: timestamp,
+      updatedAt: timestamp,
+    };
+    await runTransaction(firestore, async (transaction) => {
+      const [itemSnapshot, reservationSnapshot] = await Promise.all([
+        transaction.get(itemRef),
+        transaction.get(reservationRef),
+      ]);
+      if (!itemSnapshot.exists()) {
+        throw new RepositoryError("not_found", "Wishlist item not found.");
+      }
+      const item = mapWishlistItem(
+        itemSnapshot.id,
+        wishlistId,
+        itemSnapshot.data(),
+      );
+      const existingStatus = reservationSnapshot.data()?.status;
+      if (
+        item.status !== "available" ||
+        existingStatus === "reserved" ||
+        existingStatus === "purchased"
+      ) {
+        throw new RepositoryError("conflict", "Item is already unavailable.");
+      }
+      transaction.set(reservationRef, {
+        roomId: wishlist.roomId,
+        wishlistId,
+        wishlistOwnerId: wishlist.ownerId,
+        itemId,
+        reservedByUserId: userId,
+        status: "reserved",
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      });
+      transaction.update(itemRef, {
+        status: "reserved",
+        updatedAt: serverTimestamp(),
+      });
+    });
+    return reservation;
   }
 
   async cancelReservation(
-    _itemId: EntityId,
-    _userId: EntityId,
+    itemId: EntityId,
+    userId: EntityId,
   ): Promise<void> {
-    throw readOnlyError();
+    const firestore = getFirebaseFirestore();
+    const reservationRef = doc(firestore, "reservations", itemId);
+    await runTransaction(firestore, async (transaction) => {
+      const reservationSnapshot = await transaction.get(reservationRef);
+      if (!reservationSnapshot.exists()) {
+        throw new RepositoryError("not_found", "Reservation not found.");
+      }
+      const data = reservationSnapshot.data();
+      if (
+        data.reservedByUserId !== userId ||
+        data.status !== "reserved"
+      ) {
+        throw new RepositoryError(
+          "forbidden",
+          "Active reservation ownership required.",
+        );
+      }
+      const wishlistId = String(data.wishlistId);
+      const itemRef = doc(
+        firestore,
+        "wishlists",
+        wishlistId,
+        "items",
+        itemId,
+      );
+      transaction.update(reservationRef, {
+        status: "cancelled",
+        updatedAt: serverTimestamp(),
+      });
+      transaction.update(itemRef, {
+        status: "available",
+        updatedAt: serverTimestamp(),
+      });
+    });
   }
 
   async markPurchased(
-    _itemId: EntityId,
-    _userId: EntityId,
+    itemId: EntityId,
+    userId: EntityId,
   ): Promise<Reservation> {
-    throw readOnlyError();
+    const firestore = getFirebaseFirestore();
+    const reservationRef = doc(firestore, "reservations", itemId);
+    const timestamp = new Date().toISOString();
+    let roomId = "";
+    let createdAt = timestamp;
+    await runTransaction(firestore, async (transaction) => {
+      const reservationSnapshot = await transaction.get(reservationRef);
+      if (!reservationSnapshot.exists()) {
+        throw new RepositoryError("not_found", "Reservation not found.");
+      }
+      const data = reservationSnapshot.data();
+      if (
+        data.reservedByUserId !== userId ||
+        data.status !== "reserved"
+      ) {
+        throw new RepositoryError(
+          "forbidden",
+          "Active reservation ownership required.",
+        );
+      }
+      roomId = String(data.roomId);
+      createdAt = timestampToIso(data.createdAt);
+      const itemRef = doc(
+        firestore,
+        "wishlists",
+        String(data.wishlistId),
+        "items",
+        itemId,
+      );
+      transaction.update(reservationRef, {
+        status: "purchased",
+        updatedAt: serverTimestamp(),
+      });
+      transaction.update(itemRef, {
+        status: "purchased",
+        updatedAt: serverTimestamp(),
+      });
+    });
+    return {
+      id: itemId,
+      roomId,
+      itemId,
+      reservedByUserId: userId,
+      status: "purchased",
+      createdAt,
+      updatedAt: timestamp,
+    };
   }
+
+  private async findItemReference(
+    itemId: EntityId,
+  ): Promise<DocumentReference<DocumentData>> {
+    const snapshots = await getDocs(
+      query(
+        collectionGroup(getFirebaseFirestore(), "items"),
+        where("id", "==", itemId),
+        limit(1),
+      ),
+    );
+    const snapshot = snapshots.docs[0];
+    if (!snapshot) {
+      throw new RepositoryError("not_found", "Wishlist item not found.");
+    }
+    return snapshot.ref;
+  }
+}
+
+function omitUndefined(
+  value: Record<string, unknown>,
+): Record<string, unknown> {
+  return Object.fromEntries(
+    Object.entries(value).filter(([, entry]) => entry !== undefined),
+  );
+}
+
+function toFirestorePatch(
+  patch: WishlistItemPatch,
+): Record<string, unknown> {
+  return Object.fromEntries(
+    Object.entries(patch).map(([key, value]) => [
+      key,
+      value === undefined ? deleteField() : value,
+    ]),
+  );
 }

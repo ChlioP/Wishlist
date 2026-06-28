@@ -88,12 +88,16 @@ export function RoomSettingsPage() {
     metadata: ActivityEvent["metadata"],
   ) {
     if (!user || !roomId) return;
-    await localRepositories.activity.append({
-      action,
-      actorUserId: user.id,
-      metadata,
-      roomId,
-    });
+    try {
+      await localRepositories.activity.append({
+        action,
+        actorUserId: user.id,
+        metadata,
+        roomId,
+      });
+    } catch {
+      // Activity writes are optional until their Firebase write phase.
+    }
   }
 
   async function changePrivacy(privacyMode: RoomPrivacyMode) {

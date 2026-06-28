@@ -1,11 +1,18 @@
 import {
   collection,
   collectionGroup,
+  deleteDoc,
+  deleteField,
   doc,
   getDoc,
   getDocs,
+  limit,
   query,
+  serverTimestamp,
+  setDoc,
+  updateDoc,
   where,
+  writeBatch,
 } from "firebase/firestore";
 
 import type {
@@ -20,6 +27,7 @@ import {
   mapVisibilityGrant,
   readOnlyError,
 } from "@/data/repositories/firebase/firestoreMappers";
+import { RepositoryError } from "@/data/repositories/errors";
 import { getFirebaseFirestore } from "@/lib/firebase";
 import type {
   EntityId,
@@ -117,26 +125,166 @@ export class FirebaseRoomRepository implements RoomRepository {
     );
   }
 
-  async create(_input: {
+  async create(input: {
     name: string;
     description?: string;
     ownerId: EntityId;
   }): Promise<Room> {
-    throw readOnlyError();
+    const name = input.name.trim();
+    if (!name) {
+      throw new RepositoryError("validation", "Room name is required.");
+    }
+    const firestore = getFirebaseFirestore();
+    const roomRef = doc(collection(firestore, "rooms"));
+    const membershipRef = doc(
+      firestore,
+      "rooms",
+      roomRef.id,
+      "members",
+      input.ownerId,
+    );
+    const wishlistRef = doc(
+      firestore,
+      "wishlists",
+      `${roomRef.id}_${input.ownerId}`,
+    );
+    const inviteCode = createInviteCode(name);
+    const timestamp = new Date().toISOString();
+    const room: Room = {
+      id: roomRef.id,
+      name,
+      description: input.description?.trim() || undefined,
+      inviteCode,
+      privacyMode: "private",
+      ownerId: input.ownerId,
+      createdAt: timestamp,
+      updatedAt: timestamp,
+    };
+    const batch = writeBatch(firestore);
+    batch.set(roomRef, {
+      name,
+      ...(room.description ? { description: room.description } : {}),
+      inviteCode,
+      privacyMode: "private",
+      ownerId: input.ownerId,
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    });
+    batch.set(membershipRef, {
+      userId: input.ownerId,
+      role: "owner",
+      status: "active",
+      joinedAt: serverTimestamp(),
+    });
+    batch.set(wishlistRef, {
+      roomId: roomRef.id,
+      ownerId: input.ownerId,
+      title: `${name} Wishlist`,
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    });
+    await batch.commit();
+    return room;
   }
 
   async update(
-    _roomId: EntityId,
-    _patch: Partial<Pick<Room, "name" | "description" | "privacyMode">>,
+    roomId: EntityId,
+    patch: Partial<Pick<Room, "name" | "description" | "privacyMode">>,
   ): Promise<Room> {
-    throw readOnlyError();
+    const room = await this.getById(roomId);
+    if (!room) {
+      throw new RepositoryError("not_found", "Room not found.");
+    }
+    if (patch.name !== undefined && !patch.name.trim()) {
+      throw new RepositoryError("validation", "Room name cannot be empty.");
+    }
+    await updateDoc(doc(getFirebaseFirestore(), "rooms", roomId), {
+      ...Object.fromEntries(
+        Object.entries(patch).map(([key, value]) => [
+          key,
+          value === undefined
+            ? deleteField()
+            : key === "name" && typeof value === "string"
+              ? value.trim()
+              : value,
+        ]),
+      ),
+      updatedAt: serverTimestamp(),
+    });
+    return {
+      ...room,
+      ...patch,
+      name: patch.name?.trim() ?? room.name,
+      updatedAt: new Date().toISOString(),
+    };
   }
 
   async joinByCode(
-    _userId: EntityId,
-    _inviteCode: string,
+    userId: EntityId,
+    inviteCode: string,
   ): Promise<RoomMembership> {
-    throw readOnlyError();
+    const code = inviteCode.trim().toUpperCase();
+    if (!code) {
+      throw new RepositoryError("validation", "Invite code is required.");
+    }
+    const firestore = getFirebaseFirestore();
+    const rooms = await getDocs(
+      query(
+        collection(firestore, "rooms"),
+        where("inviteCode", "==", code),
+        limit(1),
+      ),
+    );
+    const roomSnapshot = rooms.docs[0];
+    if (!roomSnapshot) {
+      throw new RepositoryError("not_found", "Room code was not found.");
+    }
+    const membershipRef = doc(
+      firestore,
+      "rooms",
+      roomSnapshot.id,
+      "members",
+      userId,
+    );
+    const existing = await getDoc(membershipRef);
+    if (existing.exists() && existing.data().status === "active") {
+      throw new RepositoryError("conflict", "User already belongs to room.");
+    }
+    const wishlistRef = doc(
+      firestore,
+      "wishlists",
+      `${roomSnapshot.id}_${userId}`,
+    );
+    const wishlistSnapshot = await getDoc(wishlistRef);
+    const batch = writeBatch(firestore);
+    batch.set(
+      membershipRef,
+      {
+        userId,
+        role: "member",
+        status: "active",
+        joinedAt: serverTimestamp(),
+      },
+      { merge: true },
+    );
+    if (!wishlistSnapshot.exists()) {
+      batch.set(wishlistRef, {
+        roomId: roomSnapshot.id,
+        ownerId: userId,
+        title: `${String(roomSnapshot.data().name ?? "Room")} Wishlist`,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      });
+    }
+    await batch.commit();
+    return {
+      id: userId,
+      roomId: roomSnapshot.id,
+      userId,
+      role: "member",
+      status: "active",
+      joinedAt: new Date().toISOString(),
+    };
   }
 
   async leave(_roomId: EntityId, _userId: EntityId): Promise<void> {
@@ -165,20 +313,84 @@ export class FirebaseRoomRepository implements RoomRepository {
     throw readOnlyError();
   }
 
-  async setVisibilityGrant(_input: {
+  async setVisibilityGrant(input: {
     roomId: EntityId;
     viewerUserId: EntityId;
     wishlistOwnerId: EntityId;
     grantedByUserId: EntityId;
     allowed: boolean;
   }): Promise<void> {
-    throw readOnlyError();
+    if (input.viewerUserId === input.wishlistOwnerId) {
+      throw new RepositoryError(
+        "validation",
+        "A visibility grant cannot target the same user.",
+      );
+    }
+    const room = await this.getById(input.roomId);
+    if (!room) {
+      throw new RepositoryError("not_found", "Room not found.");
+    }
+    const members = await this.listMembers(input.roomId);
+    const administrator = members.find(
+      (member) => member.userId === input.grantedByUserId,
+    );
+    if (
+      !administrator ||
+      (administrator.role !== "owner" && administrator.role !== "admin")
+    ) {
+      throw new RepositoryError(
+        "forbidden",
+        "Room management permission required.",
+      );
+    }
+    if (
+      !members.some((member) => member.userId === input.viewerUserId) ||
+      !members.some((member) => member.userId === input.wishlistOwnerId)
+    ) {
+      throw new RepositoryError(
+        "validation",
+        "Visibility users must be active room members.",
+      );
+    }
+    const grantRef = doc(
+      getFirebaseFirestore(),
+      "rooms",
+      input.roomId,
+      "visibilityGrants",
+      `${input.viewerUserId}_${input.wishlistOwnerId}`,
+    );
+    if (!input.allowed) {
+      await deleteDoc(grantRef);
+      return;
+    }
+    await setDoc(grantRef, {
+      viewerUserId: input.viewerUserId,
+      wishlistOwnerId: input.wishlistOwnerId,
+      grantedByUserId: input.grantedByUserId,
+      createdAt: serverTimestamp(),
+    });
   }
 
   async setPrivacyMode(
-    _roomId: EntityId,
-    _privacyMode: RoomPrivacyMode,
+    roomId: EntityId,
+    privacyMode: RoomPrivacyMode,
   ): Promise<Room> {
-    throw readOnlyError();
+    return this.update(roomId, { privacyMode });
   }
+}
+
+function createInviteCode(name: string): string {
+  const prefix =
+    name
+      .toUpperCase()
+      .replace(/[^A-Z0-9]+/g, "-")
+      .replace(/^-|-$/g, "")
+      .slice(0, 12) || "ROOM";
+  const random = crypto
+    .getRandomValues(new Uint32Array(1))[0]
+    .toString(36)
+    .toUpperCase()
+    .slice(0, 6)
+    .padStart(6, "0");
+  return `${prefix}-${random}`;
 }
