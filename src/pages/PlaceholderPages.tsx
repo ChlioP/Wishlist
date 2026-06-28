@@ -3,7 +3,6 @@ import {
   Bell,
   Heart,
   Settings,
-  ShieldCheck,
   UserRound,
 } from "lucide-react";
 
@@ -59,16 +58,6 @@ export function RoomActivityPage() {
       description="Administrative activity for this room."
       icon={Activity}
       title="Room Activity"
-    />
-  );
-}
-
-export function RoomSettingsPage() {
-  return (
-    <PlaceholderPage
-      description="Administrative room and visibility controls."
-      icon={ShieldCheck}
-      title="Room Settings"
     />
   );
 }

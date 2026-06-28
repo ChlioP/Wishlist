@@ -214,7 +214,15 @@ export class LocalRoomRepository implements RoomRepository {
   async removeMember(roomId: EntityId, userId: EntityId): Promise<void> {
     const database = this.store.read();
     const room = requireRoom(database.rooms, roomId);
-    this.assertCurrentUserCanManage(database.currentUserId, room);
+    const actorId = this.assertCurrentUserCanManage(
+      database.currentUserId,
+      room,
+    );
+    const actorMembership = requireMembership(
+      database.memberships,
+      roomId,
+      actorId,
+    );
     const membership = requireMembership(
       database.memberships,
       roomId,
@@ -222,6 +230,15 @@ export class LocalRoomRepository implements RoomRepository {
     );
     if (membership.role === "owner") {
       throw new RepositoryError("forbidden", "The room owner cannot be removed.");
+    }
+    if (
+      membership.role === "admin" &&
+      actorMembership.role !== "owner"
+    ) {
+      throw new RepositoryError(
+        "forbidden",
+        "Only the room owner can remove an administrator.",
+      );
     }
     this.store.mutate((next) => {
       next.memberships = next.memberships.map((candidate) =>
@@ -308,6 +325,12 @@ export class LocalRoomRepository implements RoomRepository {
   }): Promise<void> {
     const database = this.store.read();
     const room = requireRoom(database.rooms, input.roomId);
+    if (database.currentUserId !== input.grantedByUserId) {
+      throw new RepositoryError(
+        "forbidden",
+        "Visibility changes must be attributed to the signed-in user.",
+      );
+    }
     const actorMembership = requireMembership(
       database.memberships,
       room.id,

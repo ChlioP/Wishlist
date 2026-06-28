@@ -14,11 +14,11 @@ import {
   ProfileSettingsPage,
   RoomActivityPage,
   RoomMembersPage,
-  RoomSettingsPage,
   SharedWishlistPage,
 } from "@/pages/PlaceholderPages";
 import { RegisterPage } from "@/pages/RegisterPage";
 import { RoomDetailPage } from "@/pages/RoomDetailPage";
+import { RoomSettingsPage } from "@/pages/RoomSettingsPage";
 import { RoomsPage } from "@/pages/RoomsPage";
 import { WishlistPage } from "@/pages/WishlistPage";
 
