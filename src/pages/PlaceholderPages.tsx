@@ -1,6 +1,5 @@
 import {
   Activity,
-  Bell,
   Heart,
   Settings,
   UserRound,
@@ -58,26 +57,6 @@ export function RoomActivityPage() {
       description="Administrative activity for this room."
       icon={Activity}
       title="Room Activity"
-    />
-  );
-}
-
-export function ActivityPage() {
-  return (
-    <PlaceholderPage
-      description="Your recent actions and changes."
-      icon={Activity}
-      title="Activity"
-    />
-  );
-}
-
-export function NotificationsPage() {
-  return (
-    <PlaceholderPage
-      description="Updates across your rooms."
-      icon={Bell}
-      title="Notifications"
     />
   );
 }

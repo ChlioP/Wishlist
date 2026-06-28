@@ -4,13 +4,13 @@ import { AppShell } from "@/components/layout/AppShell";
 import { AdminRoute } from "@/components/navigation/AdminRoute";
 import { ProtectedRoute } from "@/components/navigation/ProtectedRoute";
 import { PublicOnlyRoute } from "@/components/navigation/PublicOnlyRoute";
+import { ActivityPage } from "@/pages/ActivityPage";
 import { DashboardPage } from "@/pages/DashboardPage";
 import { ForgotPasswordPage } from "@/pages/ForgotPasswordPage";
 import { LoginPage } from "@/pages/LoginPage";
 import { NotFoundPage } from "@/pages/NotFoundPage";
+import { NotificationsPage } from "@/pages/NotificationsPage";
 import {
-  ActivityPage,
-  NotificationsPage,
   ProfileSettingsPage,
   RoomActivityPage,
   RoomMembersPage,
