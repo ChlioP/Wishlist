@@ -2,7 +2,7 @@ import {
   MOCK_SCHEMA_VERSION,
   type MockDatabase,
 } from "@/data/mock/database";
-import { defaultUserPreferences } from "@/data/mock/defaults";
+import { defaultUserPreferences } from "@/features/auth/defaultPreferences";
 import { mockFixtures } from "@/data/mock/fixtures";
 
 const STORAGE_KEY = "wishlist_hub_mock_database";

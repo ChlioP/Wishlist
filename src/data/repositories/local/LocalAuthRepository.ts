@@ -1,5 +1,5 @@
 import type { AuthRepository } from "@/data/repositories/contracts";
-import { defaultUserPreferences } from "@/data/mock/defaults";
+import { defaultUserPreferences } from "@/features/auth/defaultPreferences";
 import { RepositoryError } from "@/data/repositories/errors";
 import {
   createId,

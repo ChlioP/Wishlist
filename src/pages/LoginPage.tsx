@@ -14,6 +14,7 @@ interface LoginLocationState {
 
 export function LoginPage() {
   const [email, setEmail] = useState("alice@example.com");
+  const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const { signIn } = useAuth();
@@ -25,7 +26,7 @@ export function LoginPage() {
     setSubmitting(true);
     setError("");
     try {
-      await signIn({ email });
+      await signIn({ email, password: password || undefined });
       const state = location.state as LoginLocationState | null;
       navigate(state?.from?.pathname ?? "/dashboard", { replace: true });
     } catch (caught) {
@@ -52,6 +53,14 @@ export function LoginPage() {
           onChange={(event) => setEmail(event.target.value)}
           type="email"
           value={email}
+        />
+        <Input
+          autoComplete="current-password"
+          label="Password"
+          onChange={(event) => setPassword(event.target.value)}
+          placeholder="Required when Firebase is enabled"
+          type="password"
+          value={password}
         />
         <Button className="w-full" disabled={submitting} type="submit">
           {submitting ? "Signing in…" : "Sign in"}

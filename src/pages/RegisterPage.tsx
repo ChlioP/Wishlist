@@ -10,6 +10,7 @@ import { AuthLayout } from "@/pages/LoginPage";
 export function RegisterPage() {
   const [displayName, setDisplayName] = useState("");
   const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const { register } = useAuth();
@@ -20,7 +21,11 @@ export function RegisterPage() {
     setSubmitting(true);
     setError("");
     try {
-      await register({ displayName, email });
+      await register({
+        displayName,
+        email,
+        password: password || undefined,
+      });
       navigate("/dashboard", { replace: true });
     } catch (caught) {
       setError(
@@ -52,6 +57,15 @@ export function RegisterPage() {
           onChange={(event) => setEmail(event.target.value)}
           type="email"
           value={email}
+        />
+        <Input
+          autoComplete="new-password"
+          hint="Required when Firebase authentication is enabled."
+          label="Password"
+          minLength={6}
+          onChange={(event) => setPassword(event.target.value)}
+          type="password"
+          value={password}
         />
         <Button className="w-full" disabled={submitting} type="submit">
           {submitting ? "Creating account…" : "Create account"}

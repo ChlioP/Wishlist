@@ -1,5 +1,5 @@
 import type { MockDatabase } from "@/data/mock/database";
-import { defaultUserPreferences } from "@/data/mock/defaults";
+import { defaultUserPreferences } from "@/features/auth/defaultPreferences";
 
 const createdAt = "2026-06-01T18:00:00.000Z";
 const updatedAt = "2026-06-20T18:00:00.000Z";

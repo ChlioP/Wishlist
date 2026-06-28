@@ -11,7 +11,7 @@ import {
 import { ThemePreference } from "@/components/settings/ThemePreference";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
-import { localRepositories } from "@/data/repositories/local";
+import { authRepository } from "@/data/repositories/auth";
 import { useAuth } from "@/features/auth/AuthContext";
 import type { UserPreferences } from "@/types/domain";
 
@@ -47,7 +47,7 @@ export function ProfileSettingsPage() {
   async function saveProfile(values: ProfileFormValues) {
     setFeedback(null);
     try {
-      await localRepositories.auth.updateProfile({
+      await authRepository.updateProfile({
         avatarUrl: values.avatarUrl || undefined,
         displayName: values.displayName,
       });
@@ -75,7 +75,7 @@ export function ProfileSettingsPage() {
     setSavingPreferences(true);
     setFeedback(null);
     try {
-      await localRepositories.auth.updatePreferences(preferences);
+      await authRepository.updatePreferences(preferences);
       setFeedback({
         kind: "success",
         message: "Account preferences saved.",

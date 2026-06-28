@@ -4,7 +4,7 @@ import { Link } from "react-router-dom";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
-import { localRepositories } from "@/data/repositories/local";
+import { authRepository } from "@/data/repositories/auth";
 import { AuthLayout } from "@/pages/LoginPage";
 
 export function ForgotPasswordPage() {
@@ -13,7 +13,7 @@ export function ForgotPasswordPage() {
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    await localRepositories.auth.requestPasswordReset(email);
+    await authRepository.requestPasswordReset(email);
     setSent(true);
   }
 

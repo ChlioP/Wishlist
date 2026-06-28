@@ -4,6 +4,7 @@ import { LocalNotificationRepository } from "@/data/repositories/local/LocalNoti
 import { LocalRoomRepository } from "@/data/repositories/local/LocalRoomRepository";
 import { LocalWishlistRepository } from "@/data/repositories/local/LocalWishlistRepository";
 import { localMockStore } from "@/data/repositories/local/LocalMockStore";
+import { MockAuthRepository } from "@/data/repositories/local/MockAuthRepository";
 
 export const localRepositories = {
   activity: new LocalActivityRepository(localMockStore),
@@ -19,4 +20,5 @@ export {
   LocalNotificationRepository,
   LocalRoomRepository,
   LocalWishlistRepository,
+  MockAuthRepository,
 };

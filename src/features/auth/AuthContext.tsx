@@ -8,7 +8,7 @@ import {
 } from "react";
 import type { PropsWithChildren } from "react";
 
-import { localRepositories } from "@/data/repositories/local";
+import { authRepository } from "@/data/repositories/auth";
 import type { User } from "@/types/domain";
 
 interface SignInInput {
@@ -36,13 +36,18 @@ export function AuthProvider({ children }: PropsWithChildren) {
 
   useEffect(() => {
     let active = true;
-    void localRepositories.auth.getCurrentUser().then((currentUser) => {
-      if (active) {
-        setUser(currentUser);
-        setIsLoading(false);
-      }
-    });
-    const unsubscribe = localRepositories.auth.subscribe((currentUser) => {
+    void authRepository
+      .getCurrentUser()
+      .then((currentUser) => {
+        if (active) setUser(currentUser);
+      })
+      .catch(() => {
+        if (active) setUser(null);
+      })
+      .finally(() => {
+        if (active) setIsLoading(false);
+      });
+    const unsubscribe = authRepository.subscribe((currentUser) => {
       if (active) {
         setUser(currentUser);
       }
@@ -54,17 +59,17 @@ export function AuthProvider({ children }: PropsWithChildren) {
   }, []);
 
   const signIn = useCallback(async (input: SignInInput) => {
-    const signedInUser = await localRepositories.auth.signIn(input);
+    const signedInUser = await authRepository.signIn(input);
     setUser(signedInUser);
   }, []);
 
   const register = useCallback(async (input: RegisterInput) => {
-    const registeredUser = await localRepositories.auth.register(input);
+    const registeredUser = await authRepository.register(input);
     setUser(registeredUser);
   }, []);
 
   const signOut = useCallback(async () => {
-    await localRepositories.auth.signOut();
+    await authRepository.signOut();
     setUser(null);
   }, []);
 
