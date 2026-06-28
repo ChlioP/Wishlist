@@ -1,0 +1,274 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function roomData(roomId) {
+      return get(/databases/$(database)/documents/rooms/$(roomId)).data;
+    }
+
+    function membershipData(roomId, userId) {
+      return get(
+        /databases/$(database)/documents/rooms/$(roomId)/members/$(userId)
+      ).data;
+    }
+
+    function isActiveMember(roomId) {
+      return signedIn()
+        && exists(
+          /databases/$(database)/documents/rooms/$(roomId)/members/$(request.auth.uid)
+        )
+        && membershipData(roomId, request.auth.uid).status == 'active';
+    }
+
+    function isRoomManager(roomId) {
+      return isActiveMember(roomId)
+        && membershipData(roomId, request.auth.uid).role in ['owner', 'admin'];
+    }
+
+    function isActiveMemberAfterWrite(roomId) {
+      return signedIn()
+        && existsAfter(
+          /databases/$(database)/documents/rooms/$(roomId)/members/$(request.auth.uid)
+        )
+        && getAfter(
+          /databases/$(database)/documents/rooms/$(roomId)/members/$(request.auth.uid)
+        ).data.status == 'active';
+    }
+
+    function canViewWishlistData(wishlist) {
+      return isActiveMember(wishlist.roomId)
+        && (
+          wishlist.ownerId == request.auth.uid
+          || isRoomManager(wishlist.roomId)
+          || roomData(wishlist.roomId).privacyMode == 'public'
+          || (
+            roomData(wishlist.roomId).privacyMode == 'shared'
+            && exists(
+              /databases/$(database)/documents/rooms/$(wishlist.roomId)/visibilityGrants/$(request.auth.uid + '_' + wishlist.ownerId)
+            )
+          )
+        );
+    }
+
+    function canViewWishlist(wishlistId) {
+      return canViewWishlistData(
+        get(/databases/$(database)/documents/wishlists/$(wishlistId)).data
+      );
+    }
+
+    function itemStatusReservationTransition(wishlistId, itemId) {
+      let wishlist = get(
+        /databases/$(database)/documents/wishlists/$(wishlistId)
+      ).data;
+      let reservationBefore = get(
+        /databases/$(database)/documents/reservations/$(itemId)
+      );
+      let reservationAfter = getAfter(
+        /databases/$(database)/documents/reservations/$(itemId)
+      );
+      return wishlist.ownerId != request.auth.uid
+        && request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['status', 'updatedAt'])
+        && (
+          (
+            resource.data.status == 'available'
+            && request.resource.data.status == 'reserved'
+            && reservationAfter.data.reservedByUserId == request.auth.uid
+            && reservationAfter.data.status == 'reserved'
+          )
+          || (
+            resource.data.status == 'reserved'
+            && request.resource.data.status == 'available'
+            && reservationBefore.data.reservedByUserId == request.auth.uid
+            && reservationAfter.data.status == 'cancelled'
+          )
+          || (
+            resource.data.status == 'reserved'
+            && request.resource.data.status == 'purchased'
+            && reservationBefore.data.reservedByUserId == request.auth.uid
+            && reservationAfter.data.status == 'purchased'
+          )
+        );
+    }
+
+    match /users/{userId} {
+      allow read, create, update: if signedIn() && request.auth.uid == userId;
+      allow delete: if false;
+    }
+
+    match /profiles/{userId} {
+      allow read: if signedIn();
+      allow create, update: if signedIn() && request.auth.uid == userId;
+      allow delete: if false;
+    }
+
+    match /rooms/{roomId} {
+      allow get: if isActiveMember(roomId);
+      allow list: if false;
+      allow create: if signedIn()
+        && request.resource.data.ownerId == request.auth.uid
+        && request.resource.data.privacyMode == 'private';
+      allow update: if isRoomManager(roomId)
+        && request.resource.data.ownerId == resource.data.ownerId
+        && request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['name', 'description', 'privacyMode', 'updatedAt']);
+      allow delete: if isRoomManager(roomId);
+
+      match /members/{userId} {
+        allow read: if isActiveMember(roomId);
+        allow create: if signedIn()
+          && request.auth.uid == userId
+          && request.resource.data.userId == userId
+          && request.resource.data.status == 'active'
+          && (
+            request.resource.data.role == 'member'
+            || (
+              request.resource.data.role == 'owner'
+              && getAfter(
+                /databases/$(database)/documents/rooms/$(roomId)
+              ).data.ownerId == request.auth.uid
+            )
+          );
+        allow update: if (
+            isRoomManager(roomId)
+            || (
+              signedIn()
+              && request.auth.uid == userId
+              && resource.data.role != 'owner'
+            )
+          )
+          && request.resource.data.userId == resource.data.userId;
+        allow delete: if isRoomManager(roomId)
+          || (
+            signedIn()
+            && request.auth.uid == userId
+            && resource.data.role != 'owner'
+          );
+      }
+
+      match /visibilityGrants/{grantId} {
+        allow read: if isRoomManager(roomId)
+          || (
+            signedIn()
+            && resource.data.viewerUserId == request.auth.uid
+          );
+        allow create, update: if isRoomManager(roomId)
+          && request.resource.data.viewerUserId
+            != request.resource.data.wishlistOwnerId
+          && request.resource.data.grantedByUserId == request.auth.uid;
+        allow delete: if isRoomManager(roomId);
+      }
+
+      match /joinRequests/{requestId} {
+        allow read: if isRoomManager(roomId)
+          || (
+            signedIn()
+            && resource.data.userId == request.auth.uid
+          );
+        allow create: if signedIn()
+          && request.resource.data.userId == request.auth.uid
+          && request.resource.data.status == 'pending';
+        allow update, delete: if isRoomManager(roomId);
+      }
+    }
+
+    match /wishlists/{wishlistId} {
+      allow read: if canViewWishlistData(resource.data);
+      allow create: if signedIn()
+        && request.resource.data.ownerId == request.auth.uid
+        && (
+          isActiveMember(request.resource.data.roomId)
+          || isActiveMemberAfterWrite(request.resource.data.roomId)
+        );
+      allow update: if signedIn()
+        && resource.data.ownerId == request.auth.uid
+        && request.resource.data.ownerId == resource.data.ownerId
+        && request.resource.data.roomId == resource.data.roomId;
+      allow delete: if signedIn()
+        && (
+          resource.data.ownerId == request.auth.uid
+          || isRoomManager(resource.data.roomId)
+        );
+
+      match /items/{itemId} {
+        allow read: if canViewWishlist(wishlistId);
+        allow create: if signedIn()
+          && get(
+            /databases/$(database)/documents/wishlists/$(wishlistId)
+          ).data.ownerId == request.auth.uid
+          && request.resource.data.id == itemId
+          && request.resource.data.status == 'available'
+          && request.resource.data.quantityDesired >= 1;
+        allow update: if signedIn()
+          && (
+            get(
+              /databases/$(database)/documents/wishlists/$(wishlistId)
+            ).data.ownerId == request.auth.uid
+            || itemStatusReservationTransition(wishlistId, itemId)
+          );
+        allow delete: if signedIn()
+          && (
+            get(
+              /databases/$(database)/documents/wishlists/$(wishlistId)
+            ).data.ownerId == request.auth.uid
+            || isRoomManager(
+              get(
+                /databases/$(database)/documents/wishlists/$(wishlistId)
+              ).data.roomId
+            )
+          );
+      }
+    }
+
+    match /reservations/{itemId} {
+      allow read: if signedIn()
+        && resource.data.reservedByUserId == request.auth.uid;
+      allow create: if signedIn()
+        && request.resource.data.itemId == itemId
+        && request.resource.data.reservedByUserId == request.auth.uid
+        && request.resource.data.wishlistOwnerId != request.auth.uid
+        && request.resource.data.status == 'reserved'
+        && canViewWishlist(request.resource.data.wishlistId)
+        && get(
+          /databases/$(database)/documents/wishlists/$(request.resource.data.wishlistId)/items/$(itemId)
+        ).data.status == 'available';
+      allow update: if signedIn()
+        && resource.data.reservedByUserId == request.auth.uid
+        && request.resource.data.reservedByUserId
+          == resource.data.reservedByUserId
+        && request.resource.data.itemId == resource.data.itemId
+        && request.resource.data.status in ['cancelled', 'purchased'];
+      allow delete: if signedIn()
+        && (
+          resource.data.reservedByUserId == request.auth.uid
+          || isRoomManager(resource.data.roomId)
+        );
+    }
+
+    match /activity/{eventId} {
+      allow read: if signedIn()
+        && (
+          resource.data.actorUserId == request.auth.uid
+          || (
+            resource.data.roomId != null
+            && isRoomManager(resource.data.roomId)
+          )
+        );
+      allow write: if false;
+    }
+
+    match /notifications/{notificationId} {
+      allow read: if signedIn()
+        && resource.data.recipientUserId == request.auth.uid;
+      allow update: if signedIn()
+        && resource.data.recipientUserId == request.auth.uid
+        && request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['readAt']);
+      allow create, delete: if false;
+    }
+  }
+}

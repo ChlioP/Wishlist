@@ -1,441 +1,183 @@
 # WishList Hub
 
-## Overview
+WishList Hub is a collaborative wishlist application for families, friends,
+and gift exchanges. Users can create rooms, manage wishlists, reserve gifts,
+and control list visibility through private, shared, or public room modes.
 
-WishList Hub is a collaborative wishlist management platform that allows groups of users to create, organize, and share personal wishlists within private rooms. The application is designed for families, friend groups, holiday gift exchanges, birthdays, weddings, Secret Santa events, and other occasions where users want to share gift ideas while maintaining privacy controls.
+The frontend uses React, TypeScript, Vite, Tailwind CSS, and React Router.
+Application data can come from the built-in local mock repositories or from
+Firebase Authentication, Cloud Firestore, and Firebase Storage.
 
-The system uses a role-based access model where an administrator manages room membership and controls wishlist visibility settings. Each user can maintain their own wishlist while administrators determine whether wishlists remain private or can be viewed by other members.
+## Requirements
 
-The goal of the platform is to simplify gift planning, reduce duplicate purchases, and provide flexible privacy management for group-based wishlist sharing.
+- Node.js 20.19 or newer
+- npm
+- A Firebase project only when using the Firebase data provider
 
----
+## Local setup
 
-# Problem Statement
+1. Install dependencies:
 
-Traditional wishlist sharing methods often rely on spreadsheets, messaging apps, or social media posts. These methods create several challenges:
+   ```bash
+   npm install
+   ```
+
+2. Create a local environment file:
 
-* Lack of privacy controls
-* No centralized wishlist management
-* Difficulty organizing group gift exchanges
-* Duplicate gift purchases
-* Limited ability to manage visibility permissions
-* No administrator oversight
+   ```bash
+   cp .env.example .env.local
+   ```
+
+3. Keep `VITE_DATA_PROVIDER=local` to run with seeded browser-local mock data.
+   No external service is required in this mode.
+
+4. Start the development server:
 
-WishList Hub addresses these issues by providing a centralized platform where users can securely manage and share wishlists within controlled environments.
+   ```bash
+   npm run dev
+   ```
 
----
+5. Open the URL printed by Vite, normally
+   [http://localhost:5173](http://localhost:5173).
 
-# Key Features
+Mock data is stored in browser `localStorage`. Clear site data to restore the
+seeded state.
 
-## User Authentication
+## Commands
 
-### Account Registration
+| Command | Purpose |
+| --- | --- |
+| `npm run dev` | Start the Vite development server |
+| `npm run test` | Run the Vitest suite once |
+| `npm run test:watch` | Run Vitest in watch mode |
+| `npm run typecheck` | Run TypeScript checks |
+| `npm run build` | Typecheck and create the production bundle in `dist/` |
+| `npm run preview` | Preview the production bundle locally |
+
+Before deployment, run:
+
+```bash
+npm run test
+npm run typecheck
+npm run build
+```
+
+## Environment variables
+
+Copy `.env.example` to `.env.local` for local development. Vite exposes
+variables prefixed with `VITE_` to browser code, so these values must not
+contain server secrets.
 
-Users can create an account using:
-
-* Name
-* Email
-* Password
-
-### Login System
-
-Secure authentication allows users to:
-
-* Sign in
-* Sign out
-* Reset password
-* Update profile information
-
----
-
-# Room Management
-
-## Create Room
-
-Administrators can create private rooms for:
-
-* Family groups
-* Friend groups
-* Birthday parties
-* Holiday events
-* Wedding registries
-* Secret Santa exchanges
-
-Each room includes:
-
-* Room name
-* Room description
-* Room code
-* Creation date
-* Administrator information
-
----
-
-## Join Room
-
-Users can join rooms using:
-
-* Invitation link
-* Invitation code
-* Administrator approval
-
----
-
-## Room Membership Management
-
-Only administrators can:
-
-* Add members
-* Remove members
-* Approve join requests
-* Promote another administrator
-* Manage room settings
-
----
-
-# Wishlist Management
-
-## Personal Wishlist
-
-Each user can create and maintain their own wishlist.
-
-Wishlist items may include:
-
-* Product name
-* Description
-* Category
-* Priority level
-* Price estimate
-* Product URL
-* Product image
-* Quantity desired
-* Notes
-
----
-
-## Item Categories
-
-Examples:
-
-* Electronics
-* Books
-* Clothing
-* Gaming
-* Home Decor
-* Beauty Products
-* Sports
-* Collectibles
-* Travel
-* Custom Categories
-
----
-
-## Item Status Tracking
-
-Items can be marked as:
-
-* Available
-* Reserved
-* Purchased
-* Removed
-* Out of Stock
-
----
-
-# Privacy Control System
-
-One of the core features of WishList Hub is its advanced privacy model.
-
-## Default Privacy
-
-By default:
-
-* Users can only view their own wishlist.
-* Other members cannot see each other's wishlist.
-
----
-
-## Administrator Visibility
-
-Administrators can view:
-
-* All room members
-* All wishlists
-* Wishlist activity logs
-* Visibility permissions
-
-This allows administrators to oversee room activity and manage gift planning.
-
----
-
-## Permission-Based Sharing
-
-Administrators can configure visibility settings for each room.
-
-### Mode 1: Private Mode
-
-Users can only see:
-
-* Their own wishlist
-
-Administrators can see:
-
-* All wishlists
-
----
-
-### Mode 2: Shared Mode
-
-Users can view:
-
-* Their own wishlist
-* Other approved members' wishlists
-
-Administrators determine which users can view other wishlists.
-
----
-
-### Mode 3: Public Room Mode
-
-All room members can view:
-
-* Every wishlist in the room
-
-Administrators still maintain full management control.
-
----
-
-# Permission Matrix
-
-| Action               | User                | Admin |
-| -------------------- | ------------------- | ----- |
-| Create Wishlist      | Yes                 | Yes   |
-| Edit Own Wishlist    | Yes                 | Yes   |
-| Delete Own Wishlist  | Yes                 | Yes   |
-| View Own Wishlist    | Yes                 | Yes   |
-| View Others Wishlist | Permission Required | Yes   |
-| Add Room Members     | No                  | Yes   |
-| Remove Members       | No                  | Yes   |
-| Manage Visibility    | No                  | Yes   |
-| View Activity Logs   | No                  | Yes   |
-
----
-
-# Reservation System
-
-To prevent duplicate gifts, users may reserve wishlist items.
-
-Example:
-
-User A reserves a gift for User B.
-
-The item becomes:
-
-"Reserved"
-
-The recipient does not see who reserved it.
-
-Other users see that the item is unavailable.
-
-This prevents duplicate purchases while maintaining surprise gift exchanges.
-
----
-
-# Notification System
-
-Users receive notifications when:
-
-* Added to a room
-* Visibility permissions change
-* Wishlist item reserved
-* Wishlist item purchased
-* New member joins
-
-Administrators receive notifications when:
-
-* Join requests are submitted
-* Members leave
-* Wishlist reports are generated
-
----
-
-# Dashboard
-
-## User Dashboard
-
-Displays:
-
-* Personal wishlist
-* Item statistics
-* Recent activity
-* Room memberships
-
----
-
-## Admin Dashboard
-
-Displays:
-
-* Total rooms
-* Total members
-* Wishlist statistics
-* Most requested items
-* Room activity logs
-* Permission settings
-
----
-
-# Search and Filtering
-
-Users can search wishlists using:
-
-* Item name
-* Category
-* Price range
-* Priority level
-* User name
-* Room name
-
----
-
-# Technology Stack
-
-## Frontend
-
-* React.js
-* TypeScript
-* Tailwind CSS
-* Material UI
-
-## Backend
-
-* Node.js
-* Express.js
-
-## Database
-
-* PostgreSQL
-
-or
-
-* MongoDB
-
-## Authentication
-
-* JWT Authentication
-* bcrypt Password Hashing
-
-## Cloud Services
-
-* AWS S3 for image storage
-* AWS EC2 for deployment
-
----
-
-# Future Enhancements
-
-* AI gift recommendation engine
-* Amazon product integration
-* Mobile application
-* Group gifting support
-* Budget tracking
-* Birthday reminders
-* Email notifications
-* QR-code room invitations
-* Multi-room management
-* Analytics dashboard
-
----
-
-# Learning Objectives
-
-This project demonstrates:
-
-* Full-stack web development
-* Authentication and authorization
-* Role-based access control (RBAC)
-* Database design
-* REST API development
-* State management
-* Secure user management
-* Cloud deployment
-* Real-world privacy and permission systems
-
----
-
-# Example Use Case
-
-1. Alice creates a Birthday Room.
-2. Alice becomes the room administrator.
-3. Alice invites Bob, Carol, and David.
-4. Each member creates their personal wishlist.
-5. By default, wishlists remain private.
-6. Alice enables visibility between Bob and Carol.
-7. David cannot view their wishlists.
-8. Bob reserves an item from Carol's wishlist.
-9. Other users see the item as reserved.
-10. Duplicate gift purchases are prevented.
-11. Administrators maintain full control over room settings and visibility permissions.
-
-## Design Goal
-
-WishList Hub is designed to be a free, beginner-friendly wishlist sharing platform with a soft, girly, and modern aesthetic. The goal is to make gift planning feel fun, cute, organized, and easy to use without requiring users to pay for premium features.
-
-The visual theme should feel light, feminine, clean, and playful while still looking professional enough for a portfolio project.
-
-### Theme Style
-
-The app should use a soft girly design system with:
-
-* Pastel pink, cream, blush, lavender, and white color tones
-* Rounded cards and buttons
-* Soft shadows
-* Cute icons
-* Heart, bow, sparkle, and gift elements
-* Clean typography
-* Minimal clutter
-* Mobile-friendly layouts
-
-### Suggested Color Palette
-
-| Purpose          | Color   |
-| ---------------- | ------- |
-| Primary Pink     | #F8AFC8 |
-| Soft Blush       | #FCE7EF |
-| Cream Background | #FFF8F0 |
-| Lavender Accent  | #D8C7FF |
-| Text Color       | #3A2E39 |
-| White Cards      | #FFFFFF |
-
-### Suggested App Name Ideas
-
-* LuvList
-* GiftBloom
-* BowList
-* WishBabe
-* PinkParcel
-* DreamCart
-* GiftNest
-* Wishlist Café
-* RibbonRoom
-* HeartCart
-
-### Free Platform Goal
-
-The platform should be free for users. Users can create rooms, invite friends, add wishlist items, and manage privacy settings without payment.
-
-The project can still include future monetization ideas, but the first version should stay completely free to use.
-
----
-
-## Included mockups
-
-This repository contains simple static mockups and UI sketches you can open in a browser to preview the visual design and flows described above:
-
-- [wishlist_hub_mockup.html](wishlist_hub_mockup.html) — Dashboard and rooms overview mockup
-- [wishlist_hub_my_wishlist.html](wishlist_hub_my_wishlist.html) — My Wishlist page mockup (item cards, filters, progress)
-- [wishlist_hub_add_item_drawer.html](wishlist_hub_add_item_drawer.html) — Add-item drawer / form mockup
-- [wishlist_hub_admin_room_settings.html](wishlist_hub_admin_room_settings.html) — Admin room settings mockup
-
-To view any mockup, open the HTML file in your browser (double-click or use `open <filename>` on macOS). These files are static design prototypes and demonstrate UI ideas referenced in the README.
-
+| Variable | Required | Description |
+| --- | --- | --- |
+| `VITE_DATA_PROVIDER` | Yes | `local` selects mock repositories; `firebase` selects Firebase adapters. |
+| `VITE_FIREBASE_API_KEY` | Firebase only | Firebase web app API key. |
+| `VITE_FIREBASE_AUTH_DOMAIN` | Firebase only | Firebase Authentication domain. |
+| `VITE_FIREBASE_PROJECT_ID` | Firebase only | Firebase project ID. |
+| `VITE_FIREBASE_STORAGE_BUCKET` | Firebase only | Default Firebase Storage bucket. |
+| `VITE_FIREBASE_MESSAGING_SENDER_ID` | Firebase only | Firebase web app messaging sender ID. |
+| `VITE_FIREBASE_APP_ID` | Firebase only | Firebase web app ID. |
+| `VITE_USE_FIREBASE_EMULATORS` | No | Set to `true` to connect Auth, Firestore, and Storage to local emulators. Defaults to `false`. |
+
+Use these settings for mock-backed local development:
+
+```dotenv
+VITE_DATA_PROVIDER=local
+VITE_USE_FIREBASE_EMULATORS=false
+```
+
+When `VITE_DATA_PROVIDER=firebase`, all six Firebase web configuration values
+must be present or the application reports an incomplete configuration error.
+Restart the Vite server after changing environment variables.
+
+Do not commit `.env.local`. Firebase web configuration identifies the Firebase
+project but is not an authorization mechanism; Authentication and Security
+Rules enforce access.
+
+## Firebase setup
+
+1. Create separate Firebase projects for development and production.
+2. In Firebase Console, add a Web app and copy its configuration values into
+   `.env.local` or the deployment provider's environment settings.
+3. In **Authentication → Sign-in method**, enable Email/Password.
+4. Create a Cloud Firestore database.
+5. Enable Firebase Storage and create its default bucket.
+6. Install or invoke the Firebase CLI, authenticate, and select the project:
+
+   ```bash
+   npx firebase-tools login
+   npx firebase-tools use --add
+   ```
+
+7. Deploy the checked-in Firestore and Storage rules:
+
+   ```bash
+   npx firebase-tools deploy --only firestore:rules,storage
+   ```
+
+8. Set `VITE_DATA_PROVIDER=firebase`,
+   `VITE_USE_FIREBASE_EMULATORS=false`, and provide every Firebase web
+   configuration variable.
+9. Add each deployed Vercel domain under
+   **Authentication → Settings → Authorized domains**.
+10. Run the application and register a test account before production use.
+
+The rules are defined in `firestore.rules` and `storage.rules`. Review and
+deploy them whenever the permission model changes. Emulator setup and security
+test cases are documented in
+[docs/firebase-emulator.md](docs/firebase-emulator.md); the broader adapter and
+data model notes are in [docs/firebase-plan.md](docs/firebase-plan.md).
+
+To use the local Firebase Emulator Suite, set
+`VITE_USE_FIREBASE_EMULATORS=true`, then run:
+
+```bash
+npx firebase-tools emulators:start
+```
+
+The configured ports are Auth `9099`, Firestore `8080`, Storage `9199`, and
+Emulator UI `4000`.
+
+## Vercel deployment
+
+1. Push the repository to a Git provider and import it into Vercel.
+2. Select **Vite** as the framework preset.
+3. Use `npm run build` as the build command and `dist` as the output directory.
+4. Choose the data provider:
+   - For a demo deployment, set `VITE_DATA_PROVIDER=local`.
+   - For persistent shared data, set `VITE_DATA_PROVIDER=firebase` and add all
+     Firebase variables from the table above.
+5. Set `VITE_USE_FIREBASE_EMULATORS=false`.
+6. Apply variables to each intended Vercel environment (Preview and/or
+   Production), then deploy.
+7. If Firebase is enabled, add the generated Vercel domain to Firebase
+   Authentication's authorized domains.
+8. Verify sign-in, direct navigation to a nested route, room permissions,
+   wishlist writes, and image upload after deployment.
+
+`vercel.json` rewrites application routes to `index.html`, allowing React
+Router URLs to load directly and survive browser refreshes.
+
+## Screenshots
+
+Screenshots will be added here before the public release.
+
+<!-- Add desktop and mobile screenshots from the deployed application. -->
+
+## Architecture and design reference
+
+- [docs/architecture.md](docs/architecture.md) describes routes, components,
+  repositories, models, and permissions.
+- `prototype/` contains the preserved visual reference and is not part of the
+  production build.
+- Root-level static HTML mockups are additional historical design references.
+
+## Security notes
+
+- Route guards and frontend permission helpers improve the UI but are not a
+  security boundary.
+- Firebase Security Rules must enforce every protected read, write, and image
+  upload.
+- Never place service-account credentials, private keys, or server secrets in
+  `VITE_` variables.
+- Validate Security Rule changes with the Emulator Suite before deployment.
