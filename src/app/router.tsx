@@ -1,17 +1,83 @@
-import { createBrowserRouter } from "react-router-dom";
+import { Navigate, createBrowserRouter } from "react-router-dom";
 
 import { AppShell } from "@/components/layout/AppShell";
-import { FoundationPage } from "@/pages/FoundationPage";
+import { AdminRoute } from "@/components/navigation/AdminRoute";
+import { ProtectedRoute } from "@/components/navigation/ProtectedRoute";
+import { PublicOnlyRoute } from "@/components/navigation/PublicOnlyRoute";
+import { DashboardPage } from "@/pages/DashboardPage";
+import { ForgotPasswordPage } from "@/pages/ForgotPasswordPage";
+import { LoginPage } from "@/pages/LoginPage";
 import { NotFoundPage } from "@/pages/NotFoundPage";
+import {
+  ActivityPage,
+  NotificationsPage,
+  ProfileSettingsPage,
+  RoomActivityPage,
+  RoomMembersPage,
+  RoomOverviewPage,
+  RoomSettingsPage,
+  RoomsPage,
+  SharedWishlistPage,
+  WishlistPage,
+} from "@/pages/PlaceholderPages";
+import { RegisterPage } from "@/pages/RegisterPage";
 
 export const router = createBrowserRouter([
   {
-    path: "/",
-    element: <AppShell />,
+    element: <PublicOnlyRoute />,
+    children: [
+      { path: "/login", element: <LoginPage /> },
+      { path: "/register", element: <RegisterPage /> },
+      { path: "/forgot-password", element: <ForgotPasswordPage /> },
+    ],
+  },
+  {
+    element: <ProtectedRoute />,
     children: [
       {
-        index: true,
-        element: <FoundationPage />,
+        element: <AppShell />,
+        children: [
+          { path: "/", element: <Navigate replace to="/dashboard" /> },
+          { path: "/dashboard", element: <DashboardPage /> },
+          { path: "/wishlist", element: <WishlistPage /> },
+          { path: "/wishlist/new", element: <WishlistPage /> },
+          {
+            path: "/wishlist/:wishlistId",
+            element: <SharedWishlistPage />,
+          },
+          { path: "/rooms", element: <RoomsPage /> },
+          {
+            path: "/rooms/:roomId",
+            element: <RoomOverviewPage />,
+          },
+          {
+            path: "/rooms/:roomId/members",
+            element: <RoomMembersPage />,
+          },
+          {
+            element: <AdminRoute />,
+            children: [
+              {
+                path: "/rooms/:roomId/activity",
+                element: <RoomActivityPage />,
+              },
+              {
+                path: "/rooms/:roomId/settings",
+                element: <RoomSettingsPage />,
+              },
+            ],
+          },
+          { path: "/activity", element: <ActivityPage /> },
+          { path: "/notifications", element: <NotificationsPage /> },
+          {
+            path: "/settings",
+            element: <Navigate replace to="/settings/profile" />,
+          },
+          {
+            path: "/settings/profile",
+            element: <ProfileSettingsPage />,
+          },
+        ],
       },
     ],
   },

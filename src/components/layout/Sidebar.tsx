@@ -5,21 +5,34 @@ import {
   LogIn,
   UsersRound,
 } from "lucide-react";
+import { NavLink } from "react-router-dom";
 
 import { Badge } from "@/components/ui/Badge";
 import { cn } from "@/lib/classes";
 
 const menuItems = [
-  { icon: LayoutDashboard, label: "Dashboard" },
-  { icon: Heart, label: "My Wishlist" },
-  { icon: UsersRound, label: "Rooms" },
-  { icon: Bell, label: "Notifications", count: 3 },
+  { icon: LayoutDashboard, label: "Dashboard", to: "/dashboard" },
+  { icon: Heart, label: "My Wishlist", to: "/wishlist" },
+  { icon: UsersRound, label: "Rooms", to: "/rooms" },
+  { icon: Bell, label: "Notifications", to: "/notifications", count: 3 },
 ];
 
 const rooms = [
-  { color: "bg-primary", label: "Birthday Party" },
-  { color: "bg-lavender", label: "Secret Santa" },
-  { color: "bg-emerald-200", label: "Family Gifts" },
+  {
+    color: "bg-primary",
+    label: "Birthday Party",
+    to: "/rooms/room-shared",
+  },
+  {
+    color: "bg-lavender",
+    label: "Secret Santa",
+    to: "/rooms/room-private",
+  },
+  {
+    color: "bg-emerald-200",
+    label: "Family Gifts",
+    to: "/rooms/room-public",
+  },
 ];
 
 export function Sidebar() {
@@ -30,16 +43,18 @@ export function Sidebar() {
           Menu
         </p>
         <nav aria-label="Sidebar navigation" className="space-y-1">
-          {menuItems.map(({ count, icon: Icon, label }, index) => (
-            <button
-              className={cn(
-                "flex w-full items-center gap-3 rounded-2xl px-3 py-2.5 text-left text-sm transition-colors",
-                index === 0
-                  ? "bg-blush font-medium text-ink"
-                  : "text-muted hover:bg-blush hover:text-ink",
-              )}
-              key={label}
-              type="button"
+          {menuItems.map(({ count, icon: Icon, label, to }) => (
+            <NavLink
+              className={({ isActive }) =>
+                cn(
+                  "flex w-full items-center gap-3 rounded-2xl px-3 py-2.5 text-left text-sm transition-colors",
+                  isActive
+                    ? "bg-blush font-medium text-ink"
+                    : "text-muted hover:bg-blush hover:text-ink",
+                )
+              }
+              key={to}
+              to={to}
             >
               <Icon aria-hidden="true" className="h-4 w-4" />
               <span>{label}</span>
@@ -48,7 +63,7 @@ export function Sidebar() {
                   {count}
                 </Badge>
               ) : null}
-            </button>
+            </NavLink>
           ))}
         </nav>
 
@@ -57,27 +72,27 @@ export function Sidebar() {
         </p>
         <div className="space-y-1">
           {rooms.map((room) => (
-            <button
+            <NavLink
               className="flex w-full items-center gap-3 rounded-2xl px-3 py-2.5 text-left text-sm text-ink transition-colors hover:bg-blush"
               key={room.label}
-              type="button"
+              to={room.to}
             >
               <span
                 aria-hidden="true"
                 className={cn("h-2 w-2 rounded-full", room.color)}
               />
               <span className="truncate">{room.label}</span>
-            </button>
+            </NavLink>
           ))}
         </div>
 
-        <button
+        <NavLink
           className="mt-auto flex items-center gap-3 rounded-2xl px-3 py-2.5 text-left text-sm text-muted transition-colors hover:bg-blush hover:text-ink"
-          type="button"
+          to="/rooms"
         >
           <LogIn aria-hidden="true" className="h-4 w-4" />
           Join a Room
-        </button>
+        </NavLink>
       </div>
     </aside>
   );
