@@ -1,11 +1,20 @@
 export type EntityId = string;
 export type ISODateString = string;
 
+export interface UserPreferences {
+  emailNotifications: boolean;
+  joinRequestNotifications: boolean;
+  roomActivityNotifications: boolean;
+  showEmailToRoomMembers: boolean;
+  wishlistUpdateNotifications: boolean;
+}
+
 export interface User {
   id: EntityId;
   displayName: string;
   email: string;
   avatarUrl?: string;
+  preferences: UserPreferences;
   createdAt: ISODateString;
   updatedAt: ISODateString;
 }

@@ -11,11 +11,11 @@ import { LoginPage } from "@/pages/LoginPage";
 import { NotFoundPage } from "@/pages/NotFoundPage";
 import { NotificationsPage } from "@/pages/NotificationsPage";
 import {
-  ProfileSettingsPage,
   RoomActivityPage,
   RoomMembersPage,
   SharedWishlistPage,
 } from "@/pages/PlaceholderPages";
+import { ProfileSettingsPage } from "@/pages/ProfileSettingsPage";
 import { RegisterPage } from "@/pages/RegisterPage";
 import { RoomDetailPage } from "@/pages/RoomDetailPage";
 import { RoomSettingsPage } from "@/pages/RoomSettingsPage";

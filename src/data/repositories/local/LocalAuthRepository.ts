@@ -1,4 +1,5 @@
 import type { AuthRepository } from "@/data/repositories/contracts";
+import { defaultUserPreferences } from "@/data/mock/defaults";
 import { RepositoryError } from "@/data/repositories/errors";
 import {
   createId,
@@ -9,6 +10,7 @@ import {
   type LocalMockStore,
 } from "@/data/repositories/local/LocalMockStore";
 import type { User } from "@/types/domain";
+import type { UserPreferences } from "@/types/domain";
 
 export class LocalAuthRepository implements AuthRepository {
   constructor(private readonly store: LocalMockStore = localMockStore) {}
@@ -64,6 +66,7 @@ export class LocalAuthRepository implements AuthRepository {
       id: createId("user"),
       displayName,
       email,
+      preferences: defaultUserPreferences,
       createdAt: timestamp,
       updatedAt: timestamp,
     };
@@ -102,6 +105,32 @@ export class LocalAuthRepository implements AuthRepository {
       ...currentUser,
       ...patch,
       displayName: patch.displayName?.trim() || currentUser.displayName,
+      updatedAt: now(),
+    };
+    this.store.mutate((next) => {
+      next.users = next.users.map((user) =>
+        user.id === updated.id ? updated : user,
+      );
+    });
+    return updated;
+  }
+
+  async updatePreferences(
+    patch: Partial<UserPreferences>,
+  ): Promise<User> {
+    const database = this.store.read();
+    const currentUser = database.users.find(
+      (user) => user.id === database.currentUserId,
+    );
+    if (!currentUser) {
+      throw new RepositoryError("unauthenticated", "Sign in is required.");
+    }
+    const updated: User = {
+      ...currentUser,
+      preferences: {
+        ...currentUser.preferences,
+        ...patch,
+      },
       updatedAt: now(),
     };
     this.store.mutate((next) => {

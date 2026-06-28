@@ -1,7 +1,6 @@
 import {
   Activity,
   Heart,
-  Settings,
   UserRound,
 } from "lucide-react";
 
@@ -57,16 +56,6 @@ export function RoomActivityPage() {
       description="Administrative activity for this room."
       icon={Activity}
       title="Room Activity"
-    />
-  );
-}
-
-export function ProfileSettingsPage() {
-  return (
-    <PlaceholderPage
-      description="Update your account and preferences."
-      icon={Settings}
-      title="Settings"
     />
   );
 }

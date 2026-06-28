@@ -2,6 +2,7 @@ import {
   MOCK_SCHEMA_VERSION,
   type MockDatabase,
 } from "@/data/mock/database";
+import { defaultUserPreferences } from "@/data/mock/defaults";
 import { mockFixtures } from "@/data/mock/fixtures";
 
 const STORAGE_KEY = "wishlist_hub_mock_database";
@@ -35,7 +36,18 @@ export function loadMockDatabase(): MockDatabase {
     }
 
     const parsed: unknown = JSON.parse(stored);
-    return isMockDatabase(parsed) ? cloneDatabase(parsed) : createSeedDatabase();
+    if (!isMockDatabase(parsed)) {
+      return createSeedDatabase();
+    }
+    const database = cloneDatabase(parsed);
+    database.users = database.users.map((user) => ({
+      ...user,
+      preferences: {
+        ...defaultUserPreferences,
+        ...user.preferences,
+      },
+    }));
+    return database;
   } catch {
     return createSeedDatabase();
   }

@@ -1,4 +1,5 @@
 import type { MockDatabase } from "@/data/mock/database";
+import { defaultUserPreferences } from "@/data/mock/defaults";
 
 const createdAt = "2026-06-01T18:00:00.000Z";
 const updatedAt = "2026-06-20T18:00:00.000Z";
@@ -33,6 +34,7 @@ export const mockFixtures: MockDatabase = {
       id: fixtureIds.users.admin,
       displayName: "Alice Lee",
       email: "alice@example.com",
+      preferences: defaultUserPreferences,
       createdAt,
       updatedAt,
     },
@@ -40,6 +42,7 @@ export const mockFixtures: MockDatabase = {
       id: fixtureIds.users.member,
       displayName: "Bob Chen",
       email: "bob@example.com",
+      preferences: defaultUserPreferences,
       createdAt,
       updatedAt,
     },
@@ -47,6 +50,7 @@ export const mockFixtures: MockDatabase = {
       id: fixtureIds.users.sharedMember,
       displayName: "Carol Diaz",
       email: "carol@example.com",
+      preferences: defaultUserPreferences,
       createdAt,
       updatedAt,
     },
@@ -54,6 +58,7 @@ export const mockFixtures: MockDatabase = {
       id: fixtureIds.users.outsider,
       displayName: "David Kim",
       email: "david@example.com",
+      preferences: defaultUserPreferences,
       createdAt,
       updatedAt,
     },

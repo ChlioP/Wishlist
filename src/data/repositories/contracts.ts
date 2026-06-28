@@ -9,6 +9,7 @@ import type {
   RoomPrivacyMode,
   RoomRole,
   User,
+  UserPreferences,
   VisibilityGrant,
   Wishlist,
   WishlistItem,
@@ -27,6 +28,7 @@ export interface AuthRepository {
   updateProfile(
     patch: Partial<Pick<User, "displayName" | "avatarUrl">>,
   ): Promise<User>;
+  updatePreferences(patch: Partial<UserPreferences>): Promise<User>;
   subscribe(listener: (user: User | null) => void): () => void;
 }
 
