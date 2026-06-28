@@ -1,116 +1,205 @@
 import { useEffect, useState } from "react";
-import { Bell, Heart, UsersRound } from "lucide-react";
+import { Bell, Heart, Plus, UsersRound } from "lucide-react";
+import { Link } from "react-router-dom";
 
+import { EmptyDashboard } from "@/components/dashboard/EmptyDashboard";
+import { RecentNotifications } from "@/components/dashboard/RecentNotifications";
+import { RoomSummaryList } from "@/components/dashboard/RoomSummaryList";
+import { StatsGrid } from "@/components/dashboard/StatsGrid";
+import type { StatCardProps } from "@/components/dashboard/StatCard";
+import {
+  WishlistPreviewCard,
+  type WishlistPreview,
+} from "@/components/dashboard/WishlistPreviewCard";
 import { PageHeader } from "@/components/layout/PageHeader";
-import { Badge } from "@/components/ui/Badge";
 import { Card } from "@/components/ui/Card";
 import { localRepositories } from "@/data/repositories/local";
 import { useAuth } from "@/features/auth/AuthContext";
-import type { Notification, Room, Wishlist } from "@/types/domain";
+import type { Notification, Room } from "@/types/domain";
 
 interface DashboardData {
   notifications: Notification[];
+  ownItemCount: number;
   rooms: Room[];
-  wishlists: Wishlist[];
+  wishlistPreviews: WishlistPreview[];
 }
 
 export function DashboardPage() {
   const { user } = useAuth();
   const [data, setData] = useState<DashboardData | null>(null);
+  const [error, setError] = useState("");
 
   useEffect(() => {
     let active = true;
     if (!user) return;
-    void Promise.all([
-      localRepositories.rooms.listForUser(user.id),
-      localRepositories.notifications.listForUser(user.id),
-    ]).then(async ([rooms, notifications]) => {
-      const visibleLists = await Promise.all(
-        rooms.map((room) =>
-          localRepositories.wishlists.getVisible(room.id, user.id),
-        ),
-      );
-      if (active) {
+    const currentUser = user;
+
+    async function loadDashboard() {
+      try {
+        const [rooms, notifications] = await Promise.all([
+          localRepositories.rooms.listForUser(currentUser.id),
+          localRepositories.notifications.listForUser(currentUser.id),
+        ]);
+        const wishlistsByRoom = await Promise.all(
+          rooms.map((room) =>
+            localRepositories.wishlists.getVisible(room.id, currentUser.id),
+          ),
+        );
+        const wishlists = wishlistsByRoom.flat();
+        const itemsByWishlist = await Promise.all(
+          wishlists.map((wishlist) =>
+            localRepositories.wishlists.listItems(
+              wishlist.id,
+              currentUser.id,
+            ),
+          ),
+        );
+        if (!active) return;
+
+        const roomNames = new Map(
+          rooms.map((room) => [room.id, room.name] as const),
+        );
+        const wishlistPreviews = wishlists.map((wishlist, index) => ({
+          items: itemsByWishlist[index],
+          roomName: roomNames.get(wishlist.roomId) ?? "Room",
+          wishlist,
+        }));
         setData({
-          rooms,
           notifications,
-          wishlists: visibleLists.flat(),
+          ownItemCount: wishlistPreviews
+            .filter(
+              (preview) => preview.wishlist.ownerId === currentUser.id,
+            )
+            .reduce((count, preview) => count + preview.items.length, 0),
+          rooms,
+          wishlistPreviews,
         });
+      } catch {
+        if (active) {
+          setError("Dashboard data could not be loaded.");
+        }
       }
-    });
+    }
+
+    void loadDashboard();
     return () => {
       active = false;
     };
   }, [user]);
 
-  const stats = [
+  return (
+    <>
+      <PageHeader
+        action={
+          <Link
+            className="inline-flex min-h-10 items-center justify-center gap-2 rounded-full bg-primary px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-primary/90"
+            to="/wishlist/new"
+          >
+            <Plus aria-hidden="true" className="h-4 w-4" />
+            Add Item
+          </Link>
+        }
+        subtitle="Here's what's happening in your rooms today."
+        title={`Hello, ${user?.displayName.split(" ")[0] ?? "friend"}`}
+      />
+
+      {error ? (
+        <Card className="text-center">
+          <h2 className="font-display text-2xl text-ink">
+            Dashboard unavailable
+          </h2>
+          <p className="mt-2 text-sm text-muted">{error}</p>
+        </Card>
+      ) : !data ? (
+        <DashboardSkeleton />
+      ) : data.rooms.length === 0 ? (
+        <EmptyDashboard />
+      ) : (
+        <DashboardContent data={data} />
+      )}
+    </>
+  );
+}
+
+function DashboardContent({ data }: { data: DashboardData }) {
+  const unreadCount = data.notifications.filter(
+    (notification) => !notification.readAt,
+  ).length;
+  const stats: StatCardProps[] = [
     {
+      detail: "Across your joined rooms",
       icon: Heart,
-      label: "Visible wishlists",
-      value: data?.wishlists.length ?? "—",
+      label: "My wishlist items",
+      value: data.ownItemCount,
     },
     {
+      detail: "Private gifting spaces",
       icon: UsersRound,
       label: "Rooms joined",
-      value: data?.rooms.length ?? "—",
+      value: data.rooms.length,
     },
     {
+      detail: unreadCount === 0 ? "You're all caught up" : "Waiting for you",
       icon: Bell,
-      label: "Unread notifications",
-      value:
-        data?.notifications.filter((notification) => !notification.readAt)
-          .length ?? "—",
+      label: "Unread updates",
+      value: unreadCount,
     },
   ];
 
   return (
-    <>
-      <PageHeader
-        subtitle="Here's what's happening in your rooms today."
-        title={`Hello, ${user?.displayName.split(" ")[0] ?? "friend"}`}
-      />
-      <div className="grid gap-4 md:grid-cols-3">
-        {stats.map(({ icon: Icon, label, value }) => (
-          <Card key={label} padding="md">
-            <div className="flex items-center justify-between">
-              <p className="text-xs font-semibold uppercase tracking-wider text-muted">
-                {label}
-              </p>
-              <Icon aria-hidden="true" className="h-4 w-4 text-primary-dark" />
-            </div>
-            <p className="mt-4 font-display text-4xl text-ink">{value}</p>
+    <div className="space-y-6">
+      <StatsGrid stats={stats} />
+
+      <section aria-labelledby="wishlist-preview-heading">
+        <h2
+          className="mb-3 flex items-center gap-2 text-sm font-semibold text-ink"
+          id="wishlist-preview-heading"
+        >
+          <span className="h-2 w-2 rounded-full bg-primary" />
+          Wishlist previews
+        </h2>
+        {data.wishlistPreviews.length > 0 ? (
+          <div className="grid gap-4 xl:grid-cols-2">
+            {data.wishlistPreviews.slice(0, 4).map((preview) => (
+              <WishlistPreviewCard
+                key={preview.wishlist.id}
+                preview={preview}
+              />
+            ))}
+          </div>
+        ) : (
+          <Card className="text-center" padding="md">
+            <p className="text-sm text-muted">
+              No visible wishlists are available yet.
+            </p>
+          </Card>
+        )}
+      </section>
+
+      <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1.25fr)_minmax(18rem,0.75fr)]">
+        <RoomSummaryList rooms={data.rooms} />
+        <RecentNotifications notifications={data.notifications} />
+      </div>
+    </div>
+  );
+}
+
+function DashboardSkeleton() {
+  return (
+    <div aria-label="Loading dashboard" className="space-y-6">
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+        {[0, 1, 2].map((item) => (
+          <Card className="animate-pulse" key={item} padding="md">
+            <div className="h-3 w-28 rounded-full bg-blush" />
+            <div className="mt-4 h-9 w-12 rounded-xl bg-blush" />
+            <div className="mt-4 h-3 w-36 rounded-full bg-cream" />
           </Card>
         ))}
       </div>
-      <Card className="mt-5">
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="font-display text-2xl">Your rooms</h2>
-            <p className="mt-1 text-sm text-muted">
-              Fixture-backed room data from the local repository.
-            </p>
-          </div>
-          <Badge variant="pink">{data?.rooms.length ?? 0} joined</Badge>
-        </div>
-        <div className="mt-5 divide-y divide-soft">
-          {data?.rooms.map((room) => (
-            <div
-              className="flex items-center justify-between py-4 first:pt-0 last:pb-0"
-              key={room.id}
-            >
-              <div>
-                <p className="font-medium">{room.name}</p>
-                <p className="mt-1 text-xs capitalize text-muted">
-                  {room.privacyMode} visibility
-                </p>
-              </div>
-              <Badge variant={room.privacyMode === "public" ? "success" : "purple"}>
-                {room.privacyMode}
-              </Badge>
-            </div>
-          ))}
-        </div>
+      <Card className="animate-pulse">
+        <div className="h-4 w-40 rounded-full bg-blush" />
+        <div className="mt-5 h-32 rounded-2xl bg-cream" />
       </Card>
-    </>
+    </div>
   );
 }
