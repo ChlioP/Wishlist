@@ -34,16 +34,6 @@ function PlaceholderPage({
   );
 }
 
-export function WishlistPage() {
-  return (
-    <PlaceholderPage
-      description="Manage your saved gifts and ideas."
-      icon={Heart}
-      title="My Wishlist"
-    />
-  );
-}
-
 export function SharedWishlistPage() {
   return (
     <PlaceholderPage

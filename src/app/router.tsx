@@ -18,9 +18,9 @@ import {
   RoomSettingsPage,
   RoomsPage,
   SharedWishlistPage,
-  WishlistPage,
 } from "@/pages/PlaceholderPages";
 import { RegisterPage } from "@/pages/RegisterPage";
+import { WishlistPage } from "@/pages/WishlistPage";
 
 export const router = createBrowserRouter([
   {

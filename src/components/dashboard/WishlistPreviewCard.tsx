@@ -3,11 +3,8 @@ import { Link } from "react-router-dom";
 
 import { Badge } from "@/components/ui/Badge";
 import { Card } from "@/components/ui/Card";
-import type {
-  Wishlist,
-  WishlistItem,
-  WishlistItemStatus,
-} from "@/types/domain";
+import { itemStatusPresentation } from "@/features/wishlist/itemStatus";
+import type { Wishlist, WishlistItem } from "@/types/domain";
 
 export interface WishlistPreview {
   items: WishlistItem[];
@@ -18,17 +15,6 @@ export interface WishlistPreview {
 interface WishlistPreviewCardProps {
   preview: WishlistPreview;
 }
-
-const statusVariant: Record<
-  WishlistItemStatus,
-  "neutral" | "pink" | "purple" | "success"
-> = {
-  available: "success",
-  reserved: "pink",
-  purchased: "purple",
-  removed: "neutral",
-  out_of_stock: "neutral",
-};
 
 export function WishlistPreviewCard({
   preview,
@@ -46,7 +32,7 @@ export function WishlistPreviewCard({
             {preview.wishlist.title}
           </h3>
           <p className="mt-0.5 text-xs text-muted">
-            {preview.roomName} · {preview.items.length} items
+            {preview.roomName} · {itemCountLabel(preview.items.length)}
           </p>
         </div>
         <Link
@@ -71,12 +57,12 @@ export function WishlistPreviewCard({
                 <p className="truncate text-xs font-medium text-ink">
                   {item.name}
                 </p>
-                <p className="mt-0.5 text-[11px] text-muted">
+                <p className="mt-0.5 text-xs text-muted">
                   {formatPrice(item.estimatedPriceCents, item.currency)}
                 </p>
               </div>
-              <Badge variant={statusVariant[item.status]}>
-                {item.status.replace(/_/g, " ")}
+              <Badge variant={itemStatusPresentation[item.status].variant}>
+                {itemStatusPresentation[item.status].label}
               </Badge>
             </div>
           ))
@@ -88,6 +74,10 @@ export function WishlistPreviewCard({
       </div>
     </Card>
   );
+}
+
+function itemCountLabel(count: number): string {
+  return `${count} ${count === 1 ? "item" : "items"}`;
 }
 
 function formatPrice(

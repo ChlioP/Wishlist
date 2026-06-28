@@ -18,6 +18,7 @@ import { useAuth } from "@/features/auth/AuthContext";
 import type { Notification, Room } from "@/types/domain";
 
 interface DashboardData {
+  hasOwnWishlist: boolean;
   notifications: Notification[];
   ownItemCount: number;
   rooms: Room[];
@@ -31,6 +32,8 @@ export function DashboardPage() {
 
   useEffect(() => {
     let active = true;
+    setData(null);
+    setError("");
     if (!user) return;
     const currentUser = user;
 
@@ -46,31 +49,61 @@ export function DashboardPage() {
           ),
         );
         const wishlists = wishlistsByRoom.flat();
-        const itemsByWishlist = await Promise.all(
-          wishlists.map((wishlist) =>
-            localRepositories.wishlists.listItems(
+        const previewWishlists = wishlists.slice(0, 4);
+        const ownedWishlists = wishlists.filter(
+          (wishlist) => wishlist.ownerId === currentUser.id,
+        );
+        const itemTargets = Array.from(
+          new Map(
+            [...previewWishlists, ...ownedWishlists].map((wishlist) => [
               wishlist.id,
-              currentUser.id,
-            ),
-          ),
+              wishlist,
+            ]),
+          ).values(),
+        );
+        const wishlistResults = await Promise.all(
+          itemTargets.map(async (wishlist) => {
+            try {
+              const items = await localRepositories.wishlists.listItems(
+                wishlist.id,
+                currentUser.id,
+              );
+              return { items, wishlist };
+            } catch {
+              return { items: null, wishlist };
+            }
+          }),
         );
         if (!active) return;
 
+        const itemsByWishlistId = new Map(
+          wishlistResults
+            .filter(
+              (
+                result,
+              ): result is {
+                items: NonNullable<(typeof result)["items"]>;
+                wishlist: (typeof result)["wishlist"];
+              } => result.items !== null,
+            )
+            .map((result) => [result.wishlist.id, result.items] as const),
+        );
         const roomNames = new Map(
           rooms.map((room) => [room.id, room.name] as const),
         );
-        const wishlistPreviews = wishlists.map((wishlist, index) => ({
-          items: itemsByWishlist[index],
+        const wishlistPreviews = previewWishlists.map((wishlist) => ({
+          items: itemsByWishlistId.get(wishlist.id) ?? [],
           roomName: roomNames.get(wishlist.roomId) ?? "Room",
           wishlist,
         }));
         setData({
+          hasOwnWishlist: ownedWishlists.length > 0,
           notifications,
-          ownItemCount: wishlistPreviews
-            .filter(
-              (preview) => preview.wishlist.ownerId === currentUser.id,
-            )
-            .reduce((count, preview) => count + preview.items.length, 0),
+          ownItemCount: ownedWishlists.reduce(
+            (count, wishlist) =>
+              count + (itemsByWishlistId.get(wishlist.id)?.length ?? 0),
+            0,
+          ),
           rooms,
           wishlistPreviews,
         });
@@ -91,13 +124,15 @@ export function DashboardPage() {
     <>
       <PageHeader
         action={
-          <Link
-            className="inline-flex min-h-10 items-center justify-center gap-2 rounded-full bg-primary px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-primary/90"
-            to="/wishlist/new"
-          >
-            <Plus aria-hidden="true" className="h-4 w-4" />
-            Add Item
-          </Link>
+          data?.hasOwnWishlist ? (
+            <Link
+              className="inline-flex min-h-10 items-center justify-center gap-2 rounded-full bg-primary px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-primary/90"
+              to="/wishlist/new"
+            >
+              <Plus aria-hidden="true" className="h-4 w-4" />
+              Add Item
+            </Link>
+          ) : null
         }
         subtitle="Here's what's happening in your rooms today."
         title={`Hello, ${user?.displayName.split(" ")[0] ?? "friend"}`}
@@ -186,17 +221,23 @@ function DashboardContent({ data }: { data: DashboardData }) {
 
 function DashboardSkeleton() {
   return (
-    <div aria-label="Loading dashboard" className="space-y-6">
+    <div
+      aria-live="polite"
+      aria-label="Loading dashboard"
+      className="space-y-6"
+      role="status"
+    >
+      <span className="sr-only">Loading dashboard content.</span>
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
         {[0, 1, 2].map((item) => (
-          <Card className="animate-pulse" key={item} padding="md">
+          <Card className="motion-safe:animate-pulse" key={item} padding="md">
             <div className="h-3 w-28 rounded-full bg-blush" />
             <div className="mt-4 h-9 w-12 rounded-xl bg-blush" />
             <div className="mt-4 h-3 w-36 rounded-full bg-cream" />
           </Card>
         ))}
       </div>
-      <Card className="animate-pulse">
+      <Card className="motion-safe:animate-pulse">
         <div className="h-4 w-40 rounded-full bg-blush" />
         <div className="mt-5 h-32 rounded-2xl bg-cream" />
       </Card>

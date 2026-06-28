@@ -23,7 +23,7 @@ export function StatCard({
       />
       <div className="relative flex items-start justify-between gap-4">
         <div>
-          <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted">
+          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-muted">
             {label}
           </p>
           <p className="mt-3 font-display text-4xl leading-none text-ink">

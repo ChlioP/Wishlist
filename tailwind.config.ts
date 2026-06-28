@@ -13,7 +13,7 @@ export default {
         cream: "#FFF8F0",
         lavender: "#D8C7FF",
         ink: "#3A2E39",
-        muted: "#9A8A96",
+        muted: "#756A73",
         surface: "#FFFFFF",
         success: {
           DEFAULT: "#EAF7F0",

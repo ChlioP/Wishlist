@@ -66,7 +66,7 @@ export function RecentNotifications({
                     <Icon aria-hidden="true" className="h-4 w-4" />
                     {!notification.readAt ? (
                       <span
-                        aria-label="Unread"
+                        aria-hidden="true"
                         className="absolute -right-0.5 -top-0.5 h-2.5 w-2.5 rounded-full border-2 border-white bg-primary"
                       />
                     ) : null}
@@ -74,9 +74,12 @@ export function RecentNotifications({
                   <div className="min-w-0">
                     <p className="text-xs leading-5 text-ink">
                       {notificationText[notification.type]}
+                      {!notification.readAt ? (
+                        <span className="sr-only"> Unread notification.</span>
+                      ) : null}
                     </p>
                     <time
-                      className="mt-1 block text-[10px] text-muted"
+                      className="mt-1 block text-xs text-muted"
                       dateTime={notification.createdAt}
                     >
                       {formatRelativeDate(notification.createdAt)}
