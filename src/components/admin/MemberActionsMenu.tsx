@@ -1,5 +1,5 @@
 import { MoreHorizontal, UserMinus } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { Button } from "@/components/ui/Button";
 
@@ -15,11 +15,33 @@ export function MemberActionsMenu({
   onRemove,
 }: MemberActionsMenuProps) {
   const [open, setOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    function closeMenu(event: MouseEvent) {
+      if (
+        menuRef.current &&
+        !menuRef.current.contains(event.target as Node)
+      ) {
+        setOpen(false);
+      }
+    }
+    function handleEscape(event: KeyboardEvent) {
+      if (event.key === "Escape") setOpen(false);
+    }
+    document.addEventListener("mousedown", closeMenu);
+    document.addEventListener("keydown", handleEscape);
+    return () => {
+      document.removeEventListener("mousedown", closeMenu);
+      document.removeEventListener("keydown", handleEscape);
+    };
+  }, [open]);
 
   if (disabled) return null;
 
   return (
-    <div className="relative">
+    <div className="relative" ref={menuRef}>
       <Button
         aria-expanded={open}
         aria-haspopup="menu"

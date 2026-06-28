@@ -1,8 +1,9 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Gift, X } from "lucide-react";
 
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
+import { useModalDialog } from "@/hooks/useModalDialog";
 
 export interface CreateRoomValues {
   description: string;
@@ -25,14 +26,14 @@ export function CreateRoomDialog({
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
-  useEffect(() => {
-    if (!open) return;
-    function handleKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape") onClose();
-    }
-    document.addEventListener("keydown", handleKeyDown);
-    return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [onClose, open]);
+  function closeDialog() {
+    setName("");
+    setDescription("");
+    setError("");
+    onClose();
+  }
+
+  const dialogRef = useModalDialog<HTMLDivElement>(open, closeDialog);
 
   if (!open) return null;
 
@@ -62,7 +63,11 @@ export function CreateRoomDialog({
       className="fixed inset-0 z-50 grid place-items-center bg-ink/30 px-5 backdrop-blur-[2px]"
       role="dialog"
     >
-      <div className="w-full max-w-lg rounded-card border border-soft bg-cream shadow-soft">
+      <div
+        className="w-full max-w-lg rounded-card border border-soft bg-cream shadow-soft"
+        ref={dialogRef}
+        tabIndex={-1}
+      >
         <header className="flex items-start justify-between gap-4 border-b border-soft bg-white p-5 sm:p-6">
           <div className="flex items-center gap-3">
             <span className="grid h-11 w-11 place-items-center rounded-2xl bg-blush text-primary-dark">
@@ -82,7 +87,7 @@ export function CreateRoomDialog({
           </div>
           <Button
             aria-label="Close create room dialog"
-            onClick={onClose}
+            onClick={closeDialog}
             size="icon"
             variant="ghost"
           >
@@ -108,7 +113,7 @@ export function CreateRoomDialog({
             />
           </label>
           <div className="flex justify-end gap-3 border-t border-soft pt-5">
-            <Button onClick={onClose} variant="secondary">
+            <Button onClick={closeDialog} variant="secondary">
               Cancel
             </Button>
             <Button disabled={submitting} type="submit">

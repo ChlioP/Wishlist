@@ -186,7 +186,7 @@ export function WishlistPage() {
       {loading ? (
         <WishlistLoadingState />
       ) : error ? (
-        <Card className="text-center">
+        <Card className="text-center" role="alert">
           <h2 className="font-display text-2xl">Wishlist unavailable</h2>
           <p className="mt-2 text-sm text-muted">{error}</p>
         </Card>
@@ -280,13 +280,19 @@ function toCents(value: string): number | undefined {
 
 function WishlistLoadingState() {
   return (
-    <div aria-label="Loading wishlist" className="space-y-5">
-      <Card className="animate-pulse" padding="md">
+    <div
+      aria-live="polite"
+      aria-label="Loading wishlist"
+      className="space-y-5"
+      role="status"
+    >
+      <span className="sr-only">Loading wishlist items.</span>
+      <Card className="motion-safe:animate-pulse" padding="md">
         <div className="h-11 rounded-2xl bg-blush" />
       </Card>
       <div className="grid gap-4 sm:grid-cols-2 2xl:grid-cols-3">
         {[0, 1, 2].map((item) => (
-          <Card className="animate-pulse" key={item} padding="none">
+          <Card className="motion-safe:animate-pulse" key={item} padding="none">
             <div className="h-36 bg-blush" />
             <div className="p-5">
               <div className="h-4 w-2/3 rounded-full bg-blush" />

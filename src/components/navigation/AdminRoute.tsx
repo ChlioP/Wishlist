@@ -12,6 +12,7 @@ export function AdminRoute() {
 
   useEffect(() => {
     let active = true;
+    setAllowed(null);
     if (!roomId || !user) {
       setAllowed(false);
       return;
@@ -38,7 +39,15 @@ export function AdminRoute() {
   }, [roomId, user]);
 
   if (allowed === null) {
-    return <p className="text-sm text-muted">Checking room permissions…</p>;
+    return (
+      <div
+        aria-live="polite"
+        className="rounded-card border border-soft bg-white p-6 text-sm text-muted shadow-card"
+        role="status"
+      >
+        Checking room permissions…
+      </div>
+    );
   }
 
   return allowed ? (

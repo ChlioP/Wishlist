@@ -1,6 +1,7 @@
 import { AlertTriangle } from "lucide-react";
 
 import { Button } from "@/components/ui/Button";
+import { useModalDialog } from "@/hooks/useModalDialog";
 import type { WishlistItem } from "@/types/domain";
 
 interface DeleteItemDialogProps {
@@ -14,16 +15,27 @@ export function DeleteItemDialog({
   onCancel,
   onConfirm,
 }: DeleteItemDialogProps) {
+  const dialogRef = useModalDialog<HTMLDivElement>(Boolean(item), onCancel);
   if (!item) return null;
 
   return (
     <div
       aria-labelledby="delete-item-title"
       aria-modal="true"
-      className="fixed inset-0 z-50 grid place-items-center bg-ink/30 px-5 backdrop-blur-[2px]"
+      className="fixed inset-0 z-50 grid place-items-center px-5"
       role="alertdialog"
     >
-      <div className="w-full max-w-md rounded-card border border-soft bg-white p-6 shadow-soft">
+      <button
+        aria-label="Cancel item deletion"
+        className="absolute inset-0 bg-ink/30 backdrop-blur-[2px]"
+        onClick={onCancel}
+        type="button"
+      />
+      <div
+        className="relative w-full max-w-md rounded-card border border-soft bg-white p-6 shadow-soft"
+        ref={dialogRef}
+        tabIndex={-1}
+      >
         <span className="grid h-11 w-11 place-items-center rounded-2xl bg-red-50 text-red-600">
           <AlertTriangle aria-hidden="true" className="h-5 w-5" />
         </span>

@@ -55,7 +55,7 @@ export function ActivityPage() {
       {loading ? (
         <ActivityLoadingState />
       ) : error ? (
-        <Card className="text-center">
+        <Card className="text-center" role="alert">
           <h2 className="font-display text-2xl text-ink">
             Activity unavailable
           </h2>

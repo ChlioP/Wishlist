@@ -37,12 +37,23 @@
   }
 
   :focus-visible {
-    outline: 3px solid rgb(248 175 200 / 0.45);
+    outline: 3px solid rgb(160 84 122 / 0.55);
     outline-offset: 3px;
   }
 
   ::selection {
     color: #3a2e39;
     background: #fce7ef;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
   }
 }

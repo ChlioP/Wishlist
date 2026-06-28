@@ -33,7 +33,7 @@ export function ProfileSettingsPage() {
 
   if (!user || !preferences) {
     return (
-      <Card className="text-center">
+      <Card className="text-center" role="alert">
         <h1 className="font-display text-2xl text-ink">
           Settings unavailable
         </h1>

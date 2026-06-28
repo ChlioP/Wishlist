@@ -90,7 +90,7 @@ export function NotificationsPage() {
         title="Notifications"
       />
 
-      {error ? (
+      {error && notifications.length > 0 ? (
         <div
           className="mb-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
           role="alert"
@@ -102,7 +102,7 @@ export function NotificationsPage() {
       {loading ? (
         <NotificationsLoadingState />
       ) : error && notifications.length === 0 ? (
-        <Card className="text-center">
+        <Card className="text-center" role="alert">
           <h2 className="font-display text-2xl text-ink">
             Notifications unavailable
           </h2>

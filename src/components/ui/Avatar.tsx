@@ -12,7 +12,7 @@ export interface AvatarProps extends HTMLAttributes<HTMLDivElement> {
 }
 
 const sizeClasses: Record<AvatarSize, string> = {
-  sm: "h-8 w-8 text-[10px]",
+  sm: "h-8 w-8 text-xs",
   md: "h-10 w-10 text-xs",
   lg: "h-14 w-14 text-sm",
 };
@@ -35,6 +35,21 @@ export function Avatar({
   src,
   ...props
 }: AvatarProps) {
+  if (src) {
+    return (
+      <div
+        className={cn(
+          "shrink-0 overflow-hidden rounded-full bg-gradient-to-br from-primary to-lavender",
+          sizeClasses[size],
+          className,
+        )}
+        {...props}
+      >
+        <img alt={alt} className="h-full w-full object-cover" src={src} />
+      </div>
+    );
+  }
+
   return (
     <div
       aria-label={alt}
@@ -46,11 +61,7 @@ export function Avatar({
       role="img"
       {...props}
     >
-      {src ? (
-        <img alt={alt} className="h-full w-full object-cover" src={src} />
-      ) : (
-        fallback ?? initials(alt)
-      )}
+      {fallback ?? initials(alt)}
     </div>
   );
 }

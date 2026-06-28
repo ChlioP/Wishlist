@@ -1,4 +1,3 @@
-import { useEffect } from "react";
 import { Gift, X } from "lucide-react";
 
 import {
@@ -6,6 +5,7 @@ import {
   type WishlistItemFormValues,
 } from "@/components/wishlist/WishlistItemForm";
 import { Button } from "@/components/ui/Button";
+import { useModalDialog } from "@/hooks/useModalDialog";
 import type { WishlistItem } from "@/types/domain";
 
 interface AddItemDrawerProps {
@@ -21,19 +21,7 @@ export function AddItemDrawer({
   onSubmit,
   open,
 }: AddItemDrawerProps) {
-  useEffect(() => {
-    if (!open) return;
-    function handleKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape") onClose();
-    }
-    document.addEventListener("keydown", handleKeyDown);
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.removeEventListener("keydown", handleKeyDown);
-      document.body.style.overflow = previousOverflow;
-    };
-  }, [onClose, open]);
+  const dialogRef = useModalDialog<HTMLElement>(open, onClose);
 
   if (!open) return null;
 
@@ -50,7 +38,11 @@ export function AddItemDrawer({
         onClick={onClose}
         type="button"
       />
-      <section className="absolute inset-y-0 right-0 flex w-full max-w-xl flex-col bg-cream shadow-2xl">
+      <section
+        className="absolute inset-y-0 right-0 flex w-full max-w-xl flex-col bg-cream shadow-2xl"
+        ref={dialogRef}
+        tabIndex={-1}
+      >
         <header className="flex items-start justify-between gap-4 border-b border-soft bg-white px-5 py-5 sm:px-7">
           <div className="flex gap-3">
             <span className="grid h-11 w-11 place-items-center rounded-2xl bg-blush text-primary-dark">
