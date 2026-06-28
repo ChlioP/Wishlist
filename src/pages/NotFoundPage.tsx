@@ -9,7 +9,7 @@ export function NotFoundPage() {
         </p>
         <h1 className="mt-3 font-display text-4xl">Page not found</h1>
         <Link
-          className="mt-6 inline-flex rounded-full bg-pink px-5 py-2.5 text-sm font-medium text-white"
+          className="mt-6 inline-flex rounded-full bg-primary px-5 py-2.5 text-sm font-medium text-white"
           to="/"
         >
           Return home

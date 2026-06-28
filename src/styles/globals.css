@@ -26,6 +26,7 @@
     min-width: 320px;
     min-height: 100vh;
     margin: 0;
+    background: #fff8f0;
   }
 
   button,
@@ -38,5 +39,10 @@
   :focus-visible {
     outline: 3px solid rgb(248 175 200 / 0.45);
     outline-offset: 3px;
+  }
+
+  ::selection {
+    color: #3a2e39;
+    background: #fce7ef;
   }
 }
