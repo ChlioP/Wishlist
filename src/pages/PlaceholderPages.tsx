@@ -5,7 +5,6 @@ import {
   Settings,
   ShieldCheck,
   UserRound,
-  UsersRound,
 } from "lucide-react";
 
 import { PageHeader } from "@/components/layout/PageHeader";
@@ -40,26 +39,6 @@ export function SharedWishlistPage() {
       description="View a wishlist allowed by room permissions."
       icon={Heart}
       title="Shared Wishlist"
-    />
-  );
-}
-
-export function RoomsPage() {
-  return (
-    <PlaceholderPage
-      description="View, create, and join shared spaces."
-      icon={UsersRound}
-      title="Rooms"
-    />
-  );
-}
-
-export function RoomOverviewPage() {
-  return (
-    <PlaceholderPage
-      description="Room summary and permitted wishlists."
-      icon={UsersRound}
-      title="Room Overview"
     />
   );
 }

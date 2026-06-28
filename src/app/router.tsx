@@ -14,12 +14,12 @@ import {
   ProfileSettingsPage,
   RoomActivityPage,
   RoomMembersPage,
-  RoomOverviewPage,
   RoomSettingsPage,
-  RoomsPage,
   SharedWishlistPage,
 } from "@/pages/PlaceholderPages";
 import { RegisterPage } from "@/pages/RegisterPage";
+import { RoomDetailPage } from "@/pages/RoomDetailPage";
+import { RoomsPage } from "@/pages/RoomsPage";
 import { WishlistPage } from "@/pages/WishlistPage";
 
 export const router = createBrowserRouter([
@@ -48,7 +48,7 @@ export const router = createBrowserRouter([
           { path: "/rooms", element: <RoomsPage /> },
           {
             path: "/rooms/:roomId",
-            element: <RoomOverviewPage />,
+            element: <RoomDetailPage />,
           },
           {
             path: "/rooms/:roomId/members",
